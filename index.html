@@ -22,7 +22,7 @@
     .mode-grid { width: min(520px, 100%); margin: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
     .mode-card { min-height: 138px; padding: 20px; color: #e9e6df; border: 1px solid rgba(255,255,255,.12); border-radius: 20px; background: rgba(5,6,7,.4); text-align: left; cursor: pointer; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 16px; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
     .mode-card:active { transform: translateY(0); }
-    .mode-card:focus-visible, .home-ear-button:focus-visible, .landing-back:focus-visible, .tone-settings-launch:focus-visible, .tone-training-start:focus-visible, .tone-training-repeat:focus-visible, .degree-button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
+    .mode-card:focus-visible, .home-ear-button:focus-visible, .landing-back:focus-visible, .tone-settings-launch:focus-visible, .tone-training-start:focus-visible, .tone-training-repeat:focus-visible, .tone-mode-button:focus-visible, .degree-button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
     .mode-icon { width: 50px; height: 50px; border: 1px solid rgba(200,166,106,.32); border-radius: 15px; display: grid; place-items: center; color: #d2ad6d; background: rgba(200,166,106,.06); }
     .mode-icon svg { width: 25px; height: 25px; }
     .mode-label { display: block; font: 500 clamp(22px, 3vw, 30px)/1.05 Georgia, serif; }
@@ -49,6 +49,12 @@
     .tone-training-score td { height: 36px; padding: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; color: #77746e; background: rgba(5,6,7,.5); text-align: center; font-size: 22px; font-weight: 750; line-height: 1; }
     .tone-training-score td.correct { color: #9ed0a7; border-color: rgba(115,174,127,.48); background: rgba(80,139,93,.12); }
     .tone-training-score td.wrong { color: #d98c86; border-color: rgba(185,92,84,.48); background: rgba(151,66,59,.13); }
+    .tone-training-controls { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+    .tone-mode-button { min-width: 0; max-width: 168px; width: 100%; min-height: 42px; padding: 0 8px; border: 1px solid rgba(255,255,255,.24); border-radius: 13px; color: #e9e6df; background: linear-gradient(145deg, rgba(48,49,54,.88), rgba(15,16,18,.92)); font-size: 14px; font-weight: 700; cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease; }
+    .tone-mode-button:last-child { justify-self: end; }
+    .tone-mode-button.correct-mode { color: #d7f4da; border-color: #77bf87; background: linear-gradient(145deg, #326842, #204c30); }
+    .tone-mode-button.wrong-mode { color: #f3c3be; border-color: #b76560; background: rgba(151,66,59,.24); }
+    .tone-mode-button:disabled:not(.correct-mode):not(.wrong-mode) { opacity: .5; cursor: default; }
     .tone-training-repeat { min-width: 128px; height: 40px; padding: 0 18px; border: 1px solid rgba(200,166,106,.45); border-radius: 20px; color: #d8c49b; background: rgba(200,166,106,.08); font-size: 14px; font-weight: 650; cursor: pointer; }
     .tone-training-repeat:disabled { opacity: .42; cursor: default; }
     .tone-stats-card { width: min(520px, calc(100vw - 28px)); }
@@ -70,6 +76,7 @@
     .tone-stats-button { min-height: 42px; padding: 0 17px; border: 1px solid rgba(255,255,255,.13); border-radius: 21px; color: #dcd8cf; background: rgba(255,255,255,.055); cursor: pointer; }
     .tone-stats-button.primary { color: #17130c; border-color: var(--accent); background: var(--accent); font-weight: 700; }
     .tone-mini-piano { position: absolute; left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); bottom: clamp(26px, 5vw, 62px); height: clamp(150px, 30dvh, 260px); border-radius: 14px 14px 10px 10px; background: #090a0b; box-shadow: 0 20px 42px rgba(0,0,0,.42); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .tone-mini-piano.awaiting-mode { opacity: .62; }
     .mini-key { position: absolute; top: 0; padding: 0; -webkit-tap-highlight-color: transparent; cursor: pointer; }
     .mini-key::before { content: attr(data-note); position: absolute; left: 50%; bottom: 15px; z-index: 4; transform: translateX(-50%); color: #706d67; font-size: 15px; font-weight: 700; line-height: 1; pointer-events: none; }
     .mini-key:focus-visible { outline: 3px solid #e5b96b; outline-offset: -4px; z-index: 6; }
@@ -265,6 +272,9 @@
       .tone-training-session { left: 18px; right: 18px; bottom: calc(24px + clamp(150px, 30dvh, 260px) + 14px); }
       .tone-training-score { border-spacing: 2px; }
       .tone-training-score td { height: 32px; border-radius: 6px; font-size: 19px; }
+      .tone-mode-button { min-height: 40px; padding: 0 4px; font-size: 13px; }
+      .tone-training-controls { gap: 6px; }
+      .tone-training-controls .tone-training-repeat { min-width: 106px; padding: 0 10px; }
       .tone-stats-content { padding: 16px; }
       .tone-stats-summary { margin-bottom: 18px; }
       .tone-history-chart { gap: 3px; padding-inline: 7px; }
@@ -454,7 +464,12 @@
             <td data-tone-result="8" aria-label="Задание 9"></td><td data-tone-result="9" aria-label="Задание 10"></td>
           </tr></tbody>
         </table>
-        <button class="tone-training-repeat" id="toneTrainingRepeat" type="button">Повторить</button>
+        <div class="tone-training-controls" role="group" aria-label="Сначала выберите лад, затем тонику">
+          <button class="tone-mode-button" type="button" data-tone-mode="major" disabled>Мажор</button>
+          <button class="tone-training-repeat" id="toneTrainingRepeat" type="button">Повторить</button>
+          <button class="tone-mode-button" type="button" data-tone-mode="minor" disabled>Минор</button>
+        </div>
+        <span class="visually-hidden" id="toneTrainingFeedback" aria-live="polite"></span>
       </div>
       <div class="tone-mini-piano" id="toneMiniPiano" role="group" aria-label="Фортепианная клавиатура от C4 до B4">
         <button class="mini-key mini-white" style="--index:0" type="button" data-midi="60" data-note="C" aria-label="C4"></button>
@@ -817,6 +832,8 @@
     const toneTrainingStartButton = document.getElementById('toneTrainingStartButton');
     const toneTrainingSession = document.getElementById('toneTrainingSession');
     const toneTrainingRepeat = document.getElementById('toneTrainingRepeat');
+    const toneModeButtons = Array.from(document.querySelectorAll('[data-tone-mode]'));
+    const toneTrainingFeedback = document.getElementById('toneTrainingFeedback');
     const toneTrainingResultCells = Array.from(document.querySelectorAll('[data-tone-result]'));
     const toneTrainingStats = document.getElementById('toneTrainingStats');
     const toneTrainingStatsClose = document.getElementById('toneTrainingStatsClose');
@@ -916,7 +933,7 @@
           return { correct, errors };
         }).filter(entry => Number.isInteger(entry.correct) && entry.correct >= 0 && entry.correct <= 10 && Number.isInteger(entry.errors) && entry.errors >= 0 && entry.errors <= 10 && entry.correct + entry.errors === 10).slice(-10)
       : [];
-    let toneTrainingState = { active: false, index: 0, currentTonality: null, hadError: false, acceptingAnswer: false, lastTonality: null };
+    let toneTrainingState = { active: false, index: 0, currentTonality: null, hadError: false, acceptingAnswer: false, modeCorrect: false, wrongMode: null, lastTonality: null };
     let toneTrainingTimers = [];
     let toneTrainingChordNotes = [];
     const storedDegreeTraining = savedPreferences.earTraining?.degree;
@@ -1445,6 +1462,7 @@
       const key = event.target.closest('.mini-key');
       if (!key) return;
       event.preventDefault();
+      if (toneTrainingState.active && (!toneTrainingState.acceptingAnswer || !toneTrainingState.modeCorrect)) return;
       toneMiniPiano.setPointerCapture(event.pointerId);
       activate(event.pointerId, key);
       handleToneTrainingGuess(Number(key.dataset.midi) % 12);
@@ -1463,6 +1481,7 @@
     toneMiniPiano.addEventListener('lostpointercapture', endMiniPianoPointer);
     toneMiniPiano.addEventListener('click', event => {
       if (event.detail !== 0) return;
+      if (toneTrainingState.active && (!toneTrainingState.acceptingAnswer || !toneTrainingState.modeCorrect)) return;
       const key = event.target.closest('.mini-key');
       if (key) handleToneTrainingGuess(Number(key.dataset.midi) % 12);
     });
@@ -1739,10 +1758,13 @@
     toneTrainingRepeat.addEventListener('click', () => {
       if (toneTrainingState.active && toneTrainingState.currentTonality) playToneTrainingSequence();
     });
+    toneModeButtons.forEach(button => button.addEventListener('click', () => handleToneTrainingModeGuess(button.dataset.toneMode)));
     function clearToneTrainingResultsView() {
       toneTrainingSession.hidden = true;
       toneTrainingRepeat.disabled = true;
       toneTrainingStartButton.textContent = 'Начать тренировку';
+      toneTrainingFeedback.textContent = '';
+      syncToneTrainingInputStage();
       toneTrainingResultCells.forEach((cell, index) => {
         cell.textContent = '';
         cell.className = '';
@@ -2096,6 +2118,30 @@
     function clearToneTrainingHint() {
       toneMiniPiano.querySelectorAll('.training-answer').forEach(key => key.classList.remove('training-answer'));
     }
+    function syncToneTrainingInputStage() {
+      const canChooseMode = toneTrainingState.active && toneTrainingState.acceptingAnswer && !toneTrainingState.modeCorrect;
+      const correctMode = TONALITY_DATA[toneTrainingState.currentTonality]?.minor ? 'minor' : 'major';
+      toneModeButtons.forEach(button => {
+        button.disabled = !canChooseMode;
+        button.classList.toggle('correct-mode', toneTrainingState.active && toneTrainingState.modeCorrect && button.dataset.toneMode === correctMode);
+        button.classList.toggle('wrong-mode', toneTrainingState.active && !toneTrainingState.modeCorrect && button.dataset.toneMode === toneTrainingState.wrongMode);
+      });
+      toneMiniPiano.classList.toggle('awaiting-mode', toneTrainingState.active && (!toneTrainingState.acceptingAnswer || !toneTrainingState.modeCorrect));
+    }
+    function handleToneTrainingModeGuess(mode) {
+      if (!toneTrainingState.active || !toneTrainingState.acceptingAnswer || toneTrainingState.modeCorrect) return;
+      const correctMode = TONALITY_DATA[toneTrainingState.currentTonality]?.minor ? 'minor' : 'major';
+      if (mode !== correctMode) {
+        toneTrainingState.hadError = true;
+        toneTrainingState.wrongMode = mode;
+        toneTrainingFeedback.textContent = 'Лад неверный. Попробуйте другой.';
+      } else {
+        toneTrainingState.modeCorrect = true;
+        toneTrainingState.wrongMode = null;
+        toneTrainingFeedback.textContent = 'Лад верный. Теперь выберите тонику на клавиатуре.';
+      }
+      syncToneTrainingInputStage();
+    }
     function revealToneTrainingAnswer() {
       clearToneTrainingHint();
       const root = TONALITY_DATA[toneTrainingState.currentTonality]?.root;
@@ -2115,6 +2161,7 @@
       clearToneTrainingHint();
       toneTrainingState.acceptingAnswer = false;
       toneTrainingRepeat.disabled = true;
+      syncToneTrainingInputStage();
       piano.unlock();
       const degrees = toneTrainingConfig.soundMode === 'all-degrees' ? DEGREES : ['I', 'IV', 'V', 'I'];
       degrees.forEach((degree, index) => {
@@ -2132,11 +2179,16 @@
         releaseToneTrainingChord();
         toneTrainingState.acceptingAnswer = true;
         toneTrainingRepeat.disabled = false;
+        toneTrainingFeedback.textContent = toneTrainingState.modeCorrect ? 'Выберите тонику на клавиатуре.' : 'Выберите мажор или минор.';
+        syncToneTrainingInputStage();
       }, (degrees.length - 1) * 2000 + 1500));
     }
     function beginToneTrainingQuestion() {
       clearToneTrainingHint();
       toneTrainingState.hadError = false;
+      toneTrainingState.modeCorrect = false;
+      toneTrainingState.wrongMode = null;
+      toneTrainingFeedback.textContent = 'Прослушайте аккорды, затем выберите лад.';
       toneTrainingState.currentTonality = chooseToneTrainingTonality();
       playToneTrainingSequence();
     }
@@ -2144,7 +2196,7 @@
       clearToneTrainingPlayback();
       clearToneTrainingHint();
       closeToneTrainingStats('restart');
-      toneTrainingState = { active: true, index: 0, currentTonality: null, hadError: false, acceptingAnswer: false, lastTonality: null };
+      toneTrainingState = { active: true, index: 0, currentTonality: null, hadError: false, acceptingAnswer: false, modeCorrect: false, wrongMode: null, lastTonality: null };
       toneTrainingResultCells.forEach((cell, index) => {
         cell.textContent = '';
         cell.className = '';
@@ -2185,6 +2237,7 @@
       clearToneTrainingPlayback();
       toneTrainingState.active = false;
       toneTrainingState.acceptingAnswer = false;
+      syncToneTrainingInputStage();
       toneTrainingRepeat.disabled = true;
       toneTrainingStartButton.textContent = 'Начать заново';
       const correctCount = toneTrainingResultCells.filter(cell => cell.classList.contains('correct')).length;
@@ -2197,6 +2250,7 @@
       clearToneTrainingHint();
       toneTrainingState.active = false;
       toneTrainingState.acceptingAnswer = false;
+      syncToneTrainingInputStage();
       stopAllPointers();
       if (resetView) {
         toneTrainingSession.hidden = true;
@@ -2204,12 +2258,13 @@
       }
     }
     function handleToneTrainingGuess(pitchClass) {
-      if (!toneTrainingState.active || !toneTrainingState.acceptingAnswer) return;
+      if (!toneTrainingState.active || !toneTrainingState.acceptingAnswer || !toneTrainingState.modeCorrect) return;
       const root = TONALITY_DATA[toneTrainingState.currentTonality]?.root;
       const cell = toneTrainingResultCells[toneTrainingState.index];
       if (pitchClass !== root) {
         toneTrainingState.hadError = true;
         revealToneTrainingAnswer();
+        toneTrainingFeedback.textContent = 'Тоника неверная. Выберите правильную клавишу.';
         return;
       }
       toneTrainingState.acceptingAnswer = false;
