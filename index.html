@@ -1885,11 +1885,17 @@
       }, 1500));
     }
     function playDegreeTrainingChoice(degree) {
-      if (!degreeTrainingState.active || !degreeTrainingState.currentTonality) return;
+      const isTraining = degreeTrainingState.active;
+      const tonality = isTraining
+        ? degreeTrainingState.currentTonality
+        : (degreeTrainingConfig.keyChoice !== 'random' ? degreeTrainingConfig.keyChoice : null);
+      if (!tonality) return;
       clearDegreeTrainingPlayback();
-      degreeTrainingState.acceptingAnswer = false;
-      degreeTrainingRepeat.disabled = true;
-      const chord = chordFor(degreeTrainingState.currentTonality, degree);
+      if (isTraining) {
+        degreeTrainingState.acceptingAnswer = false;
+        degreeTrainingRepeat.disabled = true;
+      }
+      const chord = chordFor(tonality, degree);
       if (!chord) return;
       piano.unlock();
       degreeTrainingChordNotes = chord.notes.slice();
@@ -1988,7 +1994,11 @@
       if (resetView) clearDegreeTrainingResultsView();
     }
     function handleDegreeTrainingGuess(degree) {
-      if (!degreeTrainingState.active || !degreeTrainingState.acceptingAnswer) return;
+      if (!degreeTrainingState.active) {
+        playDegreeTrainingChoice(degree);
+        return;
+      }
+      if (!degreeTrainingState.acceptingAnswer) return;
       const cell = degreeTrainingResultCells[degreeTrainingState.index];
       if (degree !== degreeTrainingState.currentDegree) {
         degreeTrainingState.hadError = true;
