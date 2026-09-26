@@ -1,0 +1,2654 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#0c0d0f">
+  <meta name="description" content="Сенсорное пианино с выразительным синтезом, педалью и масштабированием клавиатуры.">
+  <title>Piano — сенсорная клавиатура</title>
+  <style>
+    :root { --white-key: 54px; --key-height: clamp(210px, 44dvh, 340px); --ink: #f4f1ea; --muted: #9b9b9a; --accent: #c8a66a; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #0c0d0f; color: var(--ink); font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { min-height: 100dvh; background: radial-gradient(circle at 50% -20%, #333338 0, #18191c 34%, #0c0d0f 72%); }
+    [hidden] { display: none !important; }
+    button, input { font: inherit; }
+    .landing-screen { position: fixed; inset: 0; overflow: auto; padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); background: radial-gradient(circle at 82% 9%, rgba(200,166,106,.16), transparent 27%), radial-gradient(circle at 8% 92%, rgba(95,104,128,.13), transparent 30%), #0c0d0f; display: grid; place-items: center; }
+    .landing-card { width: min(940px, 100%); min-height: min(680px, calc(100dvh - 36px)); padding: clamp(26px, 5vw, 62px); border: 1px solid rgba(255,255,255,.11); border-radius: clamp(24px, 4vw, 42px); background: linear-gradient(145deg, rgba(39,40,44,.86), rgba(16,17,19,.94)); box-shadow: 0 34px 100px rgba(0,0,0,.48), inset 0 1px rgba(255,255,255,.055); display: flex; flex-direction: column; }
+    .home-card { position: relative; }
+    .landing-brand { display: flex; align-items: center; gap: 11px; color: #c8a66a; font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+    .landing-mark { width: 34px; height: 34px; border: 1px solid rgba(200,166,106,.46); border-radius: 50%; display: grid; place-items: center; color: #e0bd7e; font: 500 20px/1 Georgia, serif; }
+    .landing-kicker { margin: 0 0 13px; color: #898782; font-size: 12px; letter-spacing: .17em; text-transform: uppercase; }
+    .mode-grid { width: min(520px, 100%); margin: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .mode-card { min-height: 138px; padding: 20px; color: #e9e6df; border: 1px solid rgba(255,255,255,.12); border-radius: 20px; background: rgba(5,6,7,.4); text-align: left; cursor: pointer; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 16px; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+    .mode-card:active { transform: translateY(0); }
+    .mode-card:focus-visible, .home-ear-button:focus-visible, .landing-back:focus-visible, .tone-settings-launch:focus-visible, .tone-training-start:focus-visible, .tone-training-repeat:focus-visible, .degree-button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
+    .mode-icon { width: 50px; height: 50px; border: 1px solid rgba(200,166,106,.32); border-radius: 15px; display: grid; place-items: center; color: #d2ad6d; background: rgba(200,166,106,.06); }
+    .mode-icon svg { width: 25px; height: 25px; }
+    .mode-label { display: block; font: 500 clamp(22px, 3vw, 30px)/1.05 Georgia, serif; }
+    .mode-arrow { color: #797772; font-size: 27px; transition: transform .18s ease, color .18s ease; }
+    .home-ear-button { position: absolute; top: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); width: 46px; height: 46px; padding: 0; border: 1px solid rgba(200,166,106,.38); border-radius: 14px; color: #d2ad6d; background: rgba(200,166,106,.07); display: grid; place-items: center; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+    .home-ear-button svg { width: 25px; height: 25px; pointer-events: none; }
+    .home-ear-button:active { transform: scale(.96); }
+    .landing-footer { margin-top: 24px; color: #64635f; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+    .sample-credit { display: block; margin-top: 7px; color: #55544f; font-size: 9px; letter-spacing: .08em; text-transform: none; }
+    .sample-credit a { color: inherit; text-decoration: none; }
+    .ear-card { position: relative; justify-content: flex-start; }
+    .landing-back { position: absolute; top: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); width: 44px; height: 44px; padding: 0; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; color: #ddd9d1; background: rgba(255,255,255,.045); display: grid; place-items: center; cursor: pointer; }
+    .landing-back svg { width: 22px; height: 22px; pointer-events: none; }
+    .tone-back { right: auto; left: clamp(26px, 5vw, 62px); }
+    .tone-title { position: absolute; top: clamp(26px, 5vw, 62px); left: clamp(82px, 12vw, 132px); right: clamp(82px, 12vw, 132px); min-height: 44px; margin: 0; display: grid; place-items: center; text-align: center; font: 500 clamp(24px, 3.6vw, 34px)/1 Georgia, serif; letter-spacing: -.025em; }
+    .ear-content { width: 100%; margin: auto 0; }
+    .ear-content .landing-kicker { color: #c8a66a; }
+    .ear-content h2 { margin: 0 0 clamp(28px, 5vw, 48px); font: 500 clamp(36px, 6vw, 64px)/1 Georgia, serif; letter-spacing: -.04em; }
+    .tone-settings-launch { position: absolute; top: calc(clamp(26px, 5vw, 62px) + 54px); right: clamp(26px, 5vw, 62px); width: 44px; height: 44px; padding: 0; border: 1px solid rgba(200,166,106,.42); border-radius: 12px; color: #d8c49b; background: rgba(200,166,106,.07); cursor: pointer; display: grid; place-items: center; }
+    .tone-settings-launch svg { width: 22px; height: 22px; pointer-events: none; }
+    .tone-training-start { position: absolute; top: calc(clamp(26px, 5vw, 62px) + 54px); right: calc(clamp(26px, 5vw, 62px) + 54px); height: 44px; padding: 0 16px; border: 1px solid rgba(200,166,106,.52); border-radius: 12px; color: #17130c; background: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .tone-training-session { position: absolute; left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); bottom: calc(clamp(26px, 5vw, 62px) + clamp(150px, 30dvh, 260px) + 16px); display: grid; gap: 10px; justify-items: center; }
+    .tone-training-score { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; }
+    .tone-training-score td { height: 36px; padding: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; color: #77746e; background: rgba(5,6,7,.5); text-align: center; font-size: 22px; font-weight: 750; line-height: 1; }
+    .tone-training-score td.correct { color: #9ed0a7; border-color: rgba(115,174,127,.48); background: rgba(80,139,93,.12); }
+    .tone-training-score td.wrong { color: #d98c86; border-color: rgba(185,92,84,.48); background: rgba(151,66,59,.13); }
+    .tone-training-repeat { min-width: 128px; height: 40px; padding: 0 18px; border: 1px solid rgba(200,166,106,.45); border-radius: 20px; color: #d8c49b; background: rgba(200,166,106,.08); font-size: 14px; font-weight: 650; cursor: pointer; }
+    .tone-training-repeat:disabled { opacity: .42; cursor: default; }
+    .tone-stats-card { width: min(520px, calc(100vw - 28px)); }
+    .tone-stats-content { padding: 20px; }
+    .tone-stats-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 22px; }
+    .tone-stat { min-height: 92px; padding: 15px; border: 1px solid rgba(255,255,255,.11); border-radius: 15px; background: rgba(5,6,7,.42); display: flex; flex-direction: column; justify-content: space-between; }
+    .tone-stat-label { color: #8f8c85; font-size: 14px; }
+    .tone-stat-value { color: #ece8df; font: 500 38px/1 Georgia, serif; }
+    .tone-stat:first-child .tone-stat-value { color: #b5d5b9; }
+    .tone-stat:last-child .tone-stat-value { color: #d79a94; }
+    .tone-history-title { margin: 0 0 12px; color: #d8d3c8; font-size: 15px; font-weight: 650; }
+    .tone-history-chart { min-height: 174px; padding: 14px 10px 9px; border: 1px solid rgba(255,255,255,.1); border-radius: 15px; background: rgba(5,6,7,.4); display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); align-items: end; gap: 5px; }
+    .tone-history-bar-wrap { min-width: 0; height: 148px; display: grid; grid-template-rows: 1fr auto; gap: 7px; align-items: end; }
+    .tone-history-bar-area { height: 122px; display: flex; align-items: flex-end; justify-content: center; }
+    .tone-history-bar { position: relative; width: min(24px, 78%); min-height: 4px; border-radius: 6px 6px 3px 3px; background: linear-gradient(#d5b676, #8a6d3f); box-shadow: 0 5px 14px rgba(0,0,0,.24); }
+    .tone-history-bar::before { content: attr(data-value); position: absolute; left: 50%; top: -20px; transform: translateX(-50%); color: #d8d3c8; font-size: 12px; font-weight: 700; }
+    .tone-history-index { color: #6f6d68; font-size: 11px; text-align: center; }
+    .tone-stats-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 18px; }
+    .tone-stats-button { min-height: 42px; padding: 0 17px; border: 1px solid rgba(255,255,255,.13); border-radius: 21px; color: #dcd8cf; background: rgba(255,255,255,.055); cursor: pointer; }
+    .tone-stats-button.primary { color: #17130c; border-color: var(--accent); background: var(--accent); font-weight: 700; }
+    .tone-mini-piano { position: absolute; left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); bottom: clamp(26px, 5vw, 62px); height: clamp(150px, 30dvh, 260px); border-radius: 14px 14px 10px 10px; background: #090a0b; box-shadow: 0 20px 42px rgba(0,0,0,.42); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .mini-key { position: absolute; top: 0; padding: 0; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+    .mini-key::before { content: attr(data-note); position: absolute; left: 50%; bottom: 15px; z-index: 4; transform: translateX(-50%); color: #706d67; font-size: 15px; font-weight: 700; line-height: 1; pointer-events: none; }
+    .mini-key:focus-visible { outline: 3px solid #e5b96b; outline-offset: -4px; z-index: 6; }
+    .mini-white { left: calc(var(--index) * 14.285714%); width: 14.285714%; height: 100%; border: 1px solid #aaa8a3; border-top: 0; border-radius: 0 0 7px 7px; background: linear-gradient(90deg, #deddd8 0, #fff 10%, #f8f7f2 78%, #cfcdc6 100%); box-shadow: inset 0 -10px 15px rgba(0,0,0,.07), inset 0 1px 2px #fff; z-index: 1; }
+    .mini-white.active { background: linear-gradient(90deg, #bca77e 0, #e2c891 18%, #f1dbac 82%, #a58d63 100%); }
+    .mini-white.training-answer:not(.active) { background: linear-gradient(90deg, #8b8b88 0, #b9b9b5 18%, #a9a8a3 82%, #777773 100%); }
+    .mini-black { left: calc(var(--position) * 14.285714%); width: 9%; height: 62%; border: 0; border-radius: 0 0 5px 5px; background: linear-gradient(90deg, #050505, #242426 18%, #0c0c0d 76%, #000); box-shadow: inset 0 -7px 4px rgba(255,255,255,.05), 0 7px 7px rgba(0,0,0,.55); z-index: 3; transform: translateX(-50%); }
+    .mini-black::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: 7px; height: 16%; border-radius: 2px 2px 4px 4px; background: linear-gradient(rgba(255,255,255,.03), rgba(255,255,255,.13)); }
+    .mini-black::before { bottom: 11px; color: #e6e1d7; font-size: 14px; text-shadow: 0 1px 2px #000; }
+    .mini-black.active { background: linear-gradient(90deg, #241b0e, #72582c 24%, #33250f 80%, #080603); }
+    .mini-black.training-answer:not(.active) { background: linear-gradient(90deg, #343436, #747476 24%, #555557 80%, #242426); }
+    .ear-mode-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .ear-mode-button { min-height: 132px; padding: 20px 18px; border: 1px solid rgba(255,255,255,.12); border-radius: 20px; color: #e9e6df; background: rgba(5,6,7,.42); text-align: left; cursor: pointer; display: flex; align-items: center; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+    .ear-mode-button:active { transform: translateY(0); }
+    .ear-mode-button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
+    .ear-mode-button span { font: 500 clamp(20px, 2.6vw, 28px)/1.1 Georgia, serif; }
+    .degree-key-display { position: absolute; top: calc(clamp(26px, 5vw, 62px) + 112px); left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); display: grid; justify-items: center; gap: 5px; pointer-events: none; }
+    .degree-key-label { color: #85827b; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .degree-key-value { min-width: 96px; padding: 8px 18px 9px; border: 1px solid rgba(200,166,106,.32); border-radius: 999px; color: #e4c78d; background: rgba(200,166,106,.07); font: 500 30px/1 Georgia, serif; text-align: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+    .degree-key-value:active:not(:disabled) { transform: scale(.97); }
+    .degree-key-value:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
+    .degree-key-value:disabled { cursor: default; opacity: .6; }
+    .degree-training-body { position: absolute; left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); top: calc(clamp(26px, 5vw, 62px) + 190px); bottom: clamp(26px, 5vw, 62px); display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; }
+    .degree-training-session { display: grid; gap: 10px; justify-items: center; }
+    .degree-buttons { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: clamp(8px, 1.5vw, 13px); }
+    .degree-button { min-height: clamp(72px, 12dvh, 104px); padding: 10px; border: 1px solid rgba(255,255,255,.13); border-radius: 17px; color: #e9e6df; background: linear-gradient(145deg, rgba(48,49,54,.88), rgba(15,16,18,.92)); box-shadow: inset 0 1px rgba(255,255,255,.045), 0 12px 24px rgba(0,0,0,.2); font: 500 clamp(24px, 4vw, 36px)/1 Georgia, serif; cursor: pointer; transition: transform .15s ease, border-color .15s ease, background .15s ease; }
+    .degree-button { grid-column: span 2; }
+    .degree-button:nth-child(5) { grid-column: 2 / span 2; }
+    .degree-button:active { transform: scale(.98); }
+    .degree-button.correct-answer { color: #17130c; border-color: #b9b6ae; background: linear-gradient(#c4c2bc, #8f8d87); }
+    .degree-button[disabled] { opacity: .5; cursor: default; }
+    @media (hover: hover) and (pointer: fine) {
+      .mode-card:hover { transform: translateY(-2px); border-color: rgba(200,166,106,.48); background: rgba(200,166,106,.065); }
+      .mode-card:hover .mode-arrow { color: #d2ad6d; transform: translateX(3px); }
+      .home-ear-button:hover { transform: translateY(-2px); border-color: rgba(200,166,106,.68); background: rgba(200,166,106,.12); }
+      .ear-mode-button:hover { transform: translateY(-2px); border-color: rgba(200,166,106,.5); background: rgba(200,166,106,.07); }
+      .tone-settings-launch:hover { border-color: rgba(200,166,106,.68); background: rgba(200,166,106,.12); }
+      .tone-training-start:hover { background: #d8b878; }
+    }
+    .app { width: 100%; max-width: 100vw; height: 100dvh; overflow: hidden; display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: max(12px, env(safe-area-inset-top)) 0 max(86px, calc(env(safe-area-inset-bottom) + 74px)); }
+    .top-panel { min-height: 0; margin: 0 clamp(12px, 2.4vw, 34px); padding: 14px 16px 0; border: 1px solid rgba(255,255,255,.11); border-radius: 20px 20px 10px 10px; background: linear-gradient(135deg, rgba(39,40,44,.9), rgba(18,19,22,.94)); box-shadow: 0 16px 42px rgba(0,0,0,.26), inset 0 1px rgba(255,255,255,.055); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); display: grid; grid-template-rows: auto minmax(0, 1fr); }
+    .panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .brand { display: flex; align-items: baseline; gap: 11px; min-width: 0; }
+    h1 { margin: 0; font: 500 clamp(24px, 3.4vw, 34px)/1.05 Georgia, "Times New Roman", serif; letter-spacing: -.035em; }
+    .range { color: var(--muted); font-size: 13px; letter-spacing: .13em; text-transform: uppercase; white-space: nowrap; }
+    .panel-title { color: #777776; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; white-space: nowrap; }
+    .toolbar { min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(360px, 1fr); align-items: start; }
+    .panel-workspace { min-width: 360px; min-height: 110px; height: 100%; display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 10px; }
+    .improv-panel { min-width: 0; min-height: 0; position: relative; border: 1px solid rgba(200,166,106,.48); border-radius: 14px; padding: 17px 9px 9px; background: linear-gradient(145deg, rgba(200,166,106,.07), rgba(255,255,255,.018)); box-shadow: inset 0 1px rgba(255,255,255,.035); display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+    .improv-title { position: absolute; top: -7px; left: 11px; padding: 0 7px; color: #d0af73; background: #202125; font: 600 10px/14px Inter, sans-serif; letter-spacing: .13em; text-transform: uppercase; }
+    .improv-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+    .improv-icon { width: 32px; height: 32px; padding: 0; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; color: #d7d4cd; background: rgba(255,255,255,.045); display: grid; place-items: center; cursor: pointer; transition: background .16s ease, color .16s ease, border-color .16s ease; }
+    .improv-icon:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .improv-icon:focus-visible { outline: 2px solid #e5b96b; outline-offset: 2px; }
+    .improv-icon svg { width: 17px; height: 17px; pointer-events: none; }
+    .improv-home { position: fixed; z-index: 110; top: max(16px, calc(env(safe-area-inset-top) + 4px)); right: max(16px, calc(env(safe-area-inset-right) + 8px)); }
+    .improv-toggle[aria-pressed="true"] { color: #17130c; background: var(--accent); border-color: var(--accent); }
+    .improv-toggle .pause-icon { display: none; }
+    .improv-toggle[aria-pressed="true"] .play-icon { display: none; }
+    .improv-toggle[aria-pressed="true"] .pause-icon { display: block; }
+    .improv-expand .collapse-icon { display: none; }
+    .improv-expand[aria-pressed="true"] .expand-icon { display: none; }
+    .improv-expand[aria-pressed="true"] .collapse-icon { display: block; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    #improvSound:checked + .sound-toggle { color: #d0af73; border-color: rgba(200,166,106,.46); background: rgba(200,166,106,.1); }
+    #improvSound:checked + .sound-toggle .sound-off, #improvSound:not(:checked) + .sound-toggle .sound-on { display: none; }
+    .improv-readout { min-height: 70px; height: 100%; display: flex; flex-direction: column; gap: 8px; overflow: visible; }
+    .readout-item { min-width: 0; min-height: 0; flex: 1 1 0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 11px; background: rgba(5,6,7,.55); box-shadow: inset 0 1px 8px rgba(0,0,0,.3); }
+    .chord-notes-item { display: none; position: relative; }
+    .readout-label { overflow: hidden; max-width: 100%; color: #85827b; font-size: 10px; line-height: 1; letter-spacing: .08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+    .readout-value { color: #d8d3c8; font: 500 26px/1 Georgia, serif; }
+    .readout-value-stack { min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 7px; text-align: right; }
+    .next-readout { display: none; color: #77746e; font: 500 18px/1 Georgia, serif; }
+    .future-space { min-width: 0; height: 100%; padding: 3px 0 10px 10px; display: grid; grid-template-rows: minmax(0, 1fr) auto; border-left: 1px solid rgba(255,255,255,.045); }
+    .key-signature-card { min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #d8d3c8; }
+    .key-signature-staff { width: min(100%, 396px); height: auto; max-height: 261px; overflow: visible; }
+    .staff-line, .staff-barline { stroke: rgba(216,211,200,.68); stroke-width: 1.35; vector-effect: non-scaling-stroke; }
+    .staff-clef { fill: #d8d3c8; }
+    .staff-accidental { color: #d8d3c8; }
+    .staff-accidental line, .staff-accidental path { vector-effect: non-scaling-stroke; }
+    .improv-panel.expanded { position: fixed; inset: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); z-index: 90; width: auto; height: auto; padding: 20px; border-radius: 22px; background: linear-gradient(145deg, #29261f, #151619 55%); box-shadow: 0 34px 110px rgba(0,0,0,.86), inset 0 1px rgba(255,255,255,.06); grid-template-rows: auto minmax(0, 1fr); }
+    .improv-panel.expanded .improv-title { top: 38px; left: 22px; padding: 0; transform: translateY(-50%); background: transparent; font-size: 10px; line-height: 1; letter-spacing: .14em; }
+    .improv-panel.expanded .improv-actions { min-height: 36px; padding-right: 0; }
+    .improv-panel.expanded .improv-icon { width: 36px; height: 36px; }
+    .improv-panel.expanded .improv-readout { display: flex; flex-direction: column; gap: 12px; }
+    .improv-panel.expanded .readout-item { flex: 1 1 0; flex-direction: row; justify-content: space-between; gap: 16px; padding: 16px 24px; }
+    .improv-panel.expanded .chord-notes-item { display: flex; }
+    .improv-panel.expanded .notes-visibility { position: absolute; top: 0; right: 0; display: flex; align-items: flex-start; justify-content: flex-end; }
+    .notes-visibility { display: none; width: 44px; height: 44px; padding: 6px; color: #aaa69d; border: 0; border-radius: 0; background: transparent; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .notes-visibility:hover { color: #eeeae2; background: transparent; }
+    .notes-visibility:focus-visible { outline: 2px solid #e5b96b; outline-offset: 2px; }
+    .notes-visibility svg { width: 12px; height: 12px; pointer-events: none; }
+    .notes-visibility .eye-off-icon { display: none; }
+    .notes-visibility[aria-pressed="true"] .eye-icon { display: none; }
+    .notes-visibility[aria-pressed="true"] .eye-off-icon { display: block; }
+    .chord-notes-item.notes-hidden .chord-notes-value { visibility: hidden; }
+    .improv-panel.expanded .readout-label { font-size: 11px; letter-spacing: .09em; }
+    .improv-panel.expanded .readout-value { font-size: clamp(34px, 7vw, 72px); }
+    .improv-panel.expanded .next-readout { display: block; font-size: clamp(16px, 2.6vw, 30px); }
+    .improv-panel.expanded .chord-notes-value { max-width: calc(100% - 92px); overflow: hidden; font-family: "Avenir Next", "Helvetica Neue", Arial, "Noto Sans Symbols 2", sans-serif; font-size: clamp(20px, 4vw, 48px); font-weight: 500; letter-spacing: .01em; text-overflow: clip; white-space: nowrap; }
+    body.improv-expanded .top-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    body.improv-expanded .range-nav { visibility: hidden; }
+    body.improv-expanded .improv-home { display: none; }
+    .control, .icon-btn { border: 1px solid rgba(255,255,255,.13); color: #e8e7e3; background: rgba(255,255,255,.055); box-shadow: inset 0 1px rgba(255,255,255,.05); }
+    .control { height: 42px; border-radius: 22px; padding: 0 16px; display: inline-flex; align-items: center; gap: 9px; cursor: pointer; transition: .18s ease; }
+    .control:hover, .icon-btn:hover { background: rgba(255,255,255,.1); }
+    .control.active, .compact-pedal.active { color: #16120b; background: var(--accent); border-color: var(--accent); }
+    .pedal-mark { width: 12px; height: 7px; border: 1.5px solid currentColor; border-top: 0; transform: skew(-13deg); }
+    .volume { display: flex; align-items: center; gap: 8px; padding-left: 4px; }
+    .volume svg { width: 18px; height: 18px; opacity: .7; }
+    input[type=range] { width: 92px; accent-color: var(--accent); }
+    main { width: 100%; min-width: 0; min-height: 0; overflow: hidden; display: flex; align-items: flex-end; }
+    .instrument { width: 100%; min-width: 0; max-width: 100vw; overflow: hidden; position: relative; }
+    .fallboard { height: 51px; margin: 0 clamp(12px, 2.4vw, 34px); border-radius: 13px 13px 3px 3px; background: linear-gradient(#191a1d, #090a0b); border: 1px solid rgba(255,255,255,.08); box-shadow: 0 20px 40px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; cursor: grab; touch-action: none; user-select: none; }
+    .fallboard.dragging { cursor: grabbing; }
+    .maker { color: #bb9a60; font: 500 11px/1 Georgia, serif; letter-spacing: .34em; text-indent: .34em; opacity: .92; }
+    .range-nav { position: fixed; z-index: 20; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); height: 58px; display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; gap: 10px; padding: 0 9px; background: rgba(17,18,20,.93); border: 1px solid rgba(255,255,255,.14); border-radius: 18px; box-shadow: 0 12px 32px rgba(0,0,0,.48), inset 0 1px rgba(255,255,255,.06); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+    .range-nav button { width: 42px; height: 42px; border: 0; border-radius: 12px; color: #e7e3db; background: rgba(255,255,255,.06); font-size: 27px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .range-nav button:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .scroll-track { position: relative; width: 100%; height: 34px; cursor: ew-resize; touch-action: none; outline: none; }
+    .scroll-track::before { content: ""; position: absolute; left: 0; right: 0; top: 13px; height: 8px; border-radius: 999px; background: #494640; box-shadow: inset 0 1px 3px rgba(0,0,0,.85); }
+    .scroll-fill { position: absolute; left: 0; top: 13px; width: 50%; height: 8px; border-radius: 999px; background: linear-gradient(90deg, #745f3d, var(--accent)); pointer-events: none; }
+    .scroll-thumb { position: absolute; left: 50%; top: 2px; width: 30px; height: 30px; transform: translateX(-50%); border-radius: 50%; border: 3px solid #171719; background: #e6c98f; box-shadow: 0 2px 8px rgba(0,0,0,.55), inset 0 1px #fff4d7; pointer-events: none; }
+    .scroll-track:focus-visible .scroll-thumb { outline: 3px solid #fff; outline-offset: 2px; }
+    .scroll-track.disabled { opacity: .34; cursor: default; }
+    .keyboard-scroll { width: 100%; min-width: 0; max-width: 100vw; overflow: hidden; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; padding: 0 clamp(12px, 2.4vw, 34px) 24px; }
+    .keyboard-scroll::-webkit-scrollbar { display: none; }
+    .keyboard-scroll.grabbing { cursor: grabbing; }
+    .keyboard { position: relative; height: var(--key-height); width: 2808px; min-width: 2808px; margin: 0; filter: drop-shadow(0 22px 22px rgba(0,0,0,.36)); will-change: transform; }
+    .key { position: absolute; top: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .key:focus-visible { outline: 3px solid #e5b96b; outline-offset: -4px; z-index: 5; }
+    .white { width: var(--white-key); height: 100%; border: 1px solid #aaa8a3; border-top: 0; border-radius: 0 0 7px 7px; background: linear-gradient(90deg, #deddd8 0, #fff 10%, #f8f7f2 78%, #cfcdc6 100%); box-shadow: inset 0 -10px 15px rgba(0,0,0,.07), inset 0 1px 2px #fff; z-index: 1; }
+    .white.active { background: linear-gradient(90deg, #bca77e 0, #e2c891 18%, #f1dbac 82%, #a58d63 100%); transform: perspective(900px) rotateX(-1.2deg); transform-origin: top; }
+    .black { width: calc(var(--white-key) * .63); height: 62%; border: 0; border-radius: 0 0 5px 5px; background: linear-gradient(90deg, #050505, #242426 18%, #0c0c0d 76%, #000); box-shadow: inset 0 -7px 4px rgba(255,255,255,.05), 0 7px 7px rgba(0,0,0,.55); z-index: 3; transform: translateX(-50%); }
+    .black::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: 7px; height: 16%; border-radius: 2px 2px 4px 4px; background: linear-gradient(rgba(255,255,255,.03), rgba(255,255,255,.13)); }
+    .black.active { background: linear-gradient(90deg, #241b0e, #72582c 24%, #33250f 80%, #080603); transform: translateX(-50%) perspective(800px) rotateX(-2.2deg); transform-origin: top; }
+    .note-label { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); color: #86837d; font-size: 11px; font-weight: 650; pointer-events: none; }
+    .piano-controls-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+    .zoom { display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+    .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 21px; line-height: 1; }
+    .piano-controls-line .icon-btn { width: 34px; height: 34px; }
+    .compact-pedal { flex: 0 0 auto; }
+    .compact-pedal .pedal-mark { width: 11px; height: 6px; }
+    .hint { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .pinch { width: 22px; height: 22px; opacity: .65; }
+    .status { min-width: 48px; text-align: center; line-height: 34px; font-size: 12px; font-variant-numeric: tabular-nums; }
+    dialog { width: min(620px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); overflow: auto; color: var(--ink); border: 1px solid rgba(255,255,255,.15); border-radius: 20px; padding: 0; background: #1c1d20; box-shadow: 0 28px 90px rgba(0,0,0,.72), inset 0 1px rgba(255,255,255,.055); }
+    dialog::backdrop { background: rgba(4,5,6,.7); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+    .settings-form { padding: 20px; }
+    .settings-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .settings-header h2 { margin: 0; font: 500 23px/1.1 Georgia, serif; }
+    .dialog-close { width: 34px; height: 34px; padding: 0; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; color: #ddd9d1; background: rgba(255,255,255,.05); display: grid; place-items: center; cursor: pointer; }
+    .settings-grid { display: grid; gap: 12px; }
+    .settings-section { position: relative; padding: 14px 14px 14px 50px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(8,9,10,.28); }
+    .step-number { position: absolute; top: 13px; left: 13px; width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: #17130c; background: var(--accent); font-size: 12px; font-weight: 750; }
+    .setting-title { display: block; margin: 2px 0 10px; color: #dedbd4; font-size: 13px; font-weight: 650; }
+    .settings-section select, .settings-section input[type=number] { width: 100%; height: 42px; padding: 0 12px; color: #eeeae2; border: 1px solid rgba(255,255,255,.14); border-radius: 11px; background: #111214; }
+    .count-controls { display: grid; grid-template-columns: minmax(92px, 130px) minmax(0, 1fr); align-items: center; gap: 12px; }
+    .check-line, .choice-line { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; color: #bdbab3; font-size: 13px; cursor: pointer; }
+    .check-line input, .choice-line input { width: 17px; height: 17px; accent-color: var(--accent); }
+    .choice-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 20px; margin-bottom: 9px; }
+    .settings-helper { margin: 8px 0 0; color: #7f7d77; font-size: 11px; line-height: 1.35; }
+    .degree-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 8px; }
+    .degree-slot { min-width: 0; display: grid; gap: 5px; color: #817f79; font-size: 10px; text-align: center; }
+    .degree-slot select { height: 40px; padding: 0 8px; text-align: center; }
+    .degree-slot select:disabled { opacity: .8; color: #d9c28f; -webkit-text-fill-color: #d9c28f; }
+    .settings-bottom-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+    .compact-setting { min-height: 116px; }
+    .compact-setting input[type=number] { max-width: 130px; }
+    .cycle-line { min-height: 42px; }
+    .settings-error { margin: 10px 0 0; color: #ffb0a9; font-size: 12px; line-height: 1.35; }
+    .settings-error[hidden] { display: none; }
+    .training-selection-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+    .training-selection-actions button { min-height: 36px; padding: 0 13px; border: 1px solid rgba(200,166,106,.38); border-radius: 18px; color: #d8c49b; background: rgba(200,166,106,.07); font: inherit; font-size: 13px; cursor: pointer; }
+    .training-selection-actions button:active { background: rgba(200,166,106,.16); }
+    .training-selection-actions button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 2px; }
+    .training-tonality-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .training-tonality-option { min-width: 0; min-height: 44px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: rgba(255,255,255,.025); display: flex; align-items: center; gap: 8px; color: #c8c4bc; font-size: 14px; line-height: 1.25; cursor: pointer; }
+    .training-tonality-option input { flex: 0 0 auto; width: 17px; height: 17px; accent-color: var(--accent); }
+    .settings-footer { display: flex; justify-content: flex-end; margin-top: 20px; }
+    .modal-save { height: 40px; padding: 0 18px; border: 0; border-radius: 20px; color: #17130c; background: var(--accent); font-weight: 650; cursor: pointer; }
+    @media (max-width: 1100px) {
+      .hint { display: none; }
+    }
+    @media (max-width: 680px) {
+      .landing-screen { padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+      .landing-card { min-height: calc(100dvh - 20px); padding: 24px 18px; border-radius: 25px; }
+      .home-ear-button { top: 24px; right: 18px; }
+      .landing-back { top: 24px; right: 18px; }
+      .tone-back { right: auto; left: 18px; }
+      .tone-title { top: 24px; left: 74px; right: 74px; min-height: 44px; font-size: 24px; }
+      .tone-mini-piano { left: 18px; right: 18px; bottom: 24px; }
+      .tone-training-session { left: 18px; right: 18px; bottom: calc(24px + clamp(150px, 30dvh, 260px) + 14px); }
+      .tone-training-score { border-spacing: 2px; }
+      .tone-training-score td { height: 32px; border-radius: 6px; font-size: 19px; }
+      .tone-stats-content { padding: 16px; }
+      .tone-stats-summary { margin-bottom: 18px; }
+      .tone-history-chart { gap: 3px; padding-inline: 7px; }
+      .tone-history-bar::before { font-size: 11px; }
+      .mode-grid { gap: 9px; }
+      .mode-card { min-height: 108px; padding: 15px; border-radius: 17px; }
+      .mode-icon { width: 44px; height: 44px; border-radius: 13px; }
+      .mode-label { font-size: 23px; }
+      .ear-content h2 { margin-bottom: 24px; font-size: 38px; }
+      .tone-settings-launch { top: 78px; right: 18px; }
+      .tone-training-start { top: 78px; right: 72px; }
+      .ear-mode-grid { grid-template-columns: 1fr; gap: 9px; }
+      .ear-mode-button { min-height: 92px; padding: 16px; border-radius: 17px; }
+      .ear-mode-button span { font-size: 23px; }
+      .degree-key-display { top: 138px; }
+      .degree-key-value { font-size: 26px; }
+      .degree-training-body { top: 214px; left: 18px; right: 18px; bottom: 24px; gap: 13px; }
+      .degree-buttons { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+      .degree-button { min-height: 70px; border-radius: 14px; font-size: 25px; }
+      .landing-footer { margin-top: 18px; }
+      :root { --key-height: clamp(195px, 40dvh, 300px); }
+      .app { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(82px, calc(env(safe-area-inset-bottom) + 70px)); }
+      .top-panel { margin: 0 8px; padding: 11px 10px 0; border-radius: 17px 17px 8px 8px; }
+      .panel-heading { margin-bottom: 9px; }
+      .panel-title, .range, .hint { display: none; }
+      .toolbar { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+      .control { height: 38px; padding: 0 13px; font-size: 14px; }
+      input[type=range] { width: 62px; }
+      .fallboard { margin: 0 8px; height: 42px; }
+      .range-nav { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); height: 58px; grid-template-columns: 44px minmax(0,1fr) 44px; }
+      .keyboard-scroll { padding-left: 8px; padding-right: 8px; padding-bottom: 12px; }
+      .icon-btn { width: 36px; height: 36px; }
+      .piano-controls-line .icon-btn { width: 32px; height: 32px; }
+      .piano-controls-line { gap: 5px; }
+      .zoom { gap: 2px; }
+      .status { min-width: 40px; line-height: 32px; font-size: 11px; }
+      .panel-workspace { grid-column: 1; grid-row: 1; min-width: 0; min-height: 0; height: 100%; gap: 7px; }
+      .improv-panel { padding: 15px 6px 6px; border-radius: 12px; }
+      .improv-title { left: 8px; font-size: 9px; letter-spacing: .09em; }
+      .improv-readout { min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+      .readout-item { flex-direction: row; justify-content: space-between; gap: 6px; padding: 7px 8px; }
+      .readout-label { font-size: 8px; letter-spacing: .03em; }
+      .readout-value { font-size: 19px; }
+      .future-space { padding: 2px 0 8px 7px; }
+      .key-signature-staff { max-height: 213px; }
+      .improv-actions { gap: 4px; }
+      .improv-icon { width: 28px; height: 28px; border-radius: 8px; }
+      .settings-form { padding: 16px; }
+      .settings-header { margin-bottom: 14px; }
+      .settings-header h2 { font-size: 20px; }
+      .settings-section { padding: 12px 12px 12px 44px; }
+      .training-tonality-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .step-number { top: 11px; left: 10px; }
+      .count-controls { grid-template-columns: 92px minmax(0, 1fr); gap: 9px; }
+      .settings-bottom-row { grid-template-columns: 1fr; }
+      .compact-setting { min-height: 0; }
+    }
+    @media (max-width: 1000px) and (max-height: 520px) and (orientation: landscape) {
+      :root { --key-height: clamp(145px, 43dvh, 210px); }
+      .app { padding-top: 6px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+      .top-panel { padding: 7px 10px 0; }
+      .panel-heading { display: none; }
+      .fallboard { height: 32px; }
+      .range-nav {
+        position: absolute;
+        top: 1px;
+        right: max(46px, calc(env(safe-area-inset-right) + 42px));
+        bottom: auto;
+        left: auto;
+        width: auto;
+        height: 30px;
+        grid-template-columns: repeat(2, 30px);
+        gap: 3px;
+        padding: 0;
+        border: 0;
+        border-radius: 9px;
+        background: rgba(17,18,20,.84);
+        box-shadow: 0 4px 12px rgba(0,0,0,.34);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .range-nav .scroll-track { display: none; }
+      .range-nav button { width: 30px; height: 30px; border-radius: 8px; font-size: 22px; }
+      .keyboard-scroll { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+      .control { height: 34px; }
+      .icon-btn { width: 34px; height: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="landing-screen" id="homeScreen" aria-label="Главный экран">
+    <div class="landing-card home-card">
+      <div class="landing-brand"><span class="landing-mark" aria-hidden="true">♪</span><span>Piano practice</span></div>
+      <button class="home-ear-button" id="openEarTraining" type="button" aria-label="Тренировка слуха" title="Тренировка слуха">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M18.2 13.4c-.4 1.8-1.7 2.5-3 3.2-1.2.7-2.1 1.5-2.2 3.4"/><path d="M8.1 18.2A7.9 7.9 0 1 1 20 11.4"/><path d="M9.5 9.8a3.4 3.4 0 0 1 6.6 1.1c0 1.4-.8 2.2-2 2.9"/></svg>
+      </button>
+      <div class="mode-grid">
+        <button class="mode-card" id="openImprovisation" type="button">
+          <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4v16M9.7 4v16M14.3 4v16M19 4v16M4 16h16"/><path d="M8 4v8h3V4M15 4v8h3V4" fill="currentColor" stroke="none"/></svg></span>
+          <span><span class="mode-label">Импровизация</span></span>
+          <span class="mode-arrow" aria-hidden="true">›</span>
+        </button>
+      </div>
+      <div class="landing-footer">A0–C8 · Concert piano character<span class="sample-credit">Samples: <a href="https://sfzinstruments.github.io/pianos/salamander/" target="_blank" rel="noopener">Salamander Grand Piano · Alexander Holm · CC BY 3.0</a></span></div>
+    </div>
+  </section>
+
+  <section class="landing-screen" id="earTrainingScreen" aria-labelledby="earTrainingTitle" hidden>
+    <div class="landing-card ear-card">
+      <button class="landing-back" id="earTrainingBack" type="button" aria-label="Вернуться на главный экран" title="Главный экран">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m4 11 8-7 8 7"/><path d="M6.5 9.5V20h11V9.5M9.5 20v-6h5v6"/></svg>
+      </button>
+      <div class="ear-content">
+        <h2 id="earTrainingTitle">Тренировка слуха</h2>
+        <div class="ear-mode-grid" aria-label="Упражнения для тренировки слуха">
+          <button class="ear-mode-button" id="openToneTraining" type="button"><span>Тональности</span></button>
+          <button class="ear-mode-button" id="openDegreeTraining" type="button"><span>Ступени/аккорды</span></button>
+          <button class="ear-mode-button" type="button"><span>Ноты</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-screen" id="degreeTrainingScreen" aria-labelledby="degreeTrainingTitle" hidden>
+    <div class="landing-card ear-card">
+      <button class="landing-back tone-back" id="degreeTrainingBack" type="button" aria-label="Вернуться к разделам тренировки слуха" title="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+      </button>
+      <button class="landing-back" id="degreeTrainingHome" type="button" aria-label="Вернуться на главный экран" title="Главный экран">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m4 11 8-7 8 7"/><path d="M6.5 9.5V20h11V9.5M9.5 20v-6h5v6"/></svg>
+      </button>
+      <h2 class="tone-title" id="degreeTrainingTitle">Ступени/аккорды</h2>
+      <button class="tone-settings-launch" id="degreeTrainingSettingsButton" type="button" aria-label="Настройки тренировки" title="Настройки тренировки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.55v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.1 15a1.7 1.7 0 0 0-1.5-1H2.5V10h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.56 4.2l.06.06A1.7 1.7 0 0 0 8.5 4.6a1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 18.9 9a1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1 .99Z"/></svg>
+      </button>
+      <button class="tone-training-start" id="degreeTrainingStartButton" type="button">Начать тренировку</button>
+      <div class="degree-key-display" aria-live="polite">
+        <span class="degree-key-label">Тональность</span>
+        <button class="degree-key-value" id="degreeTrainingKey" type="button" aria-label="Воспроизвести тонику" title="Воспроизвести тонику" disabled>—</button>
+      </div>
+      <div class="degree-training-body">
+        <div class="degree-training-session" id="degreeTrainingSession" aria-live="polite" hidden>
+          <table class="tone-training-score" aria-label="Результаты тренировки">
+            <tbody><tr>
+              <td data-degree-result="0" aria-label="Задание 1"></td><td data-degree-result="1" aria-label="Задание 2"></td>
+              <td data-degree-result="2" aria-label="Задание 3"></td><td data-degree-result="3" aria-label="Задание 4"></td>
+              <td data-degree-result="4" aria-label="Задание 5"></td><td data-degree-result="5" aria-label="Задание 6"></td>
+              <td data-degree-result="6" aria-label="Задание 7"></td><td data-degree-result="7" aria-label="Задание 8"></td>
+              <td data-degree-result="8" aria-label="Задание 9"></td><td data-degree-result="9" aria-label="Задание 10"></td>
+            </tr></tbody>
+          </table>
+          <button class="tone-training-repeat" id="degreeTrainingRepeat" type="button">Повторить</button>
+        </div>
+        <div class="degree-buttons" id="degreeTrainingButtons" role="group" aria-label="Выберите ступень">
+          <button class="degree-button" type="button" data-degree="I">I</button>
+          <button class="degree-button" type="button" data-degree="II">II</button>
+          <button class="degree-button" type="button" data-degree="III">III</button>
+          <button class="degree-button" type="button" data-degree="IV">IV</button>
+          <button class="degree-button" type="button" data-degree="V">V</button>
+          <button class="degree-button" type="button" data-degree="VI">VI</button>
+          <button class="degree-button" type="button" data-degree="VII">VII</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-screen" id="toneTrainingScreen" aria-labelledby="toneTrainingTitle" hidden>
+    <div class="landing-card ear-card">
+      <button class="landing-back tone-back" id="toneTrainingBack" type="button" aria-label="Вернуться к разделам тренировки слуха" title="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+      </button>
+      <button class="landing-back" id="toneTrainingHome" type="button" aria-label="Вернуться на главный экран" title="Главный экран">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m4 11 8-7 8 7"/><path d="M6.5 9.5V20h11V9.5M9.5 20v-6h5v6"/></svg>
+      </button>
+      <h2 class="tone-title" id="toneTrainingTitle">Тональности</h2>
+      <button class="tone-settings-launch" id="toneTrainingSettingsButton" type="button" aria-label="Настройки тренировки" title="Настройки тренировки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.55v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.1 15a1.7 1.7 0 0 0-1.5-1H2.5V10h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.56 4.2l.06.06A1.7 1.7 0 0 0 8.5 4.6a1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 18.9 9a1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1 .99Z"/></svg>
+      </button>
+      <button class="tone-training-start" id="toneTrainingStartButton" type="button">Начать тренировку</button>
+      <div class="tone-training-session" id="toneTrainingSession" aria-live="polite" hidden>
+        <table class="tone-training-score" aria-label="Результаты тренировки">
+          <tbody><tr>
+            <td data-tone-result="0" aria-label="Задание 1"></td><td data-tone-result="1" aria-label="Задание 2"></td>
+            <td data-tone-result="2" aria-label="Задание 3"></td><td data-tone-result="3" aria-label="Задание 4"></td>
+            <td data-tone-result="4" aria-label="Задание 5"></td><td data-tone-result="5" aria-label="Задание 6"></td>
+            <td data-tone-result="6" aria-label="Задание 7"></td><td data-tone-result="7" aria-label="Задание 8"></td>
+            <td data-tone-result="8" aria-label="Задание 9"></td><td data-tone-result="9" aria-label="Задание 10"></td>
+          </tr></tbody>
+        </table>
+        <button class="tone-training-repeat" id="toneTrainingRepeat" type="button">Повторить</button>
+      </div>
+      <div class="tone-mini-piano" id="toneMiniPiano" role="group" aria-label="Фортепианная клавиатура от C4 до B4">
+        <button class="mini-key mini-white" style="--index:0" type="button" data-midi="60" data-note="C" aria-label="C4"></button>
+        <button class="mini-key mini-white" style="--index:1" type="button" data-midi="62" data-note="D" aria-label="D4"></button>
+        <button class="mini-key mini-white" style="--index:2" type="button" data-midi="64" data-note="E" aria-label="E4"></button>
+        <button class="mini-key mini-white" style="--index:3" type="button" data-midi="65" data-note="F" aria-label="F4"></button>
+        <button class="mini-key mini-white" style="--index:4" type="button" data-midi="67" data-note="G" aria-label="G4"></button>
+        <button class="mini-key mini-white" style="--index:5" type="button" data-midi="69" data-note="A" aria-label="A4"></button>
+        <button class="mini-key mini-white" style="--index:6" type="button" data-midi="71" data-note="B" aria-label="B4"></button>
+        <button class="mini-key mini-black" style="--position:1" type="button" data-midi="61" data-note="C#" aria-label="C♯4"></button>
+        <button class="mini-key mini-black" style="--position:2" type="button" data-midi="63" data-note="D#" aria-label="D♯4"></button>
+        <button class="mini-key mini-black" style="--position:4" type="button" data-midi="66" data-note="F#" aria-label="F♯4"></button>
+        <button class="mini-key mini-black" style="--position:5" type="button" data-midi="68" data-note="G#" aria-label="G♯4"></button>
+        <button class="mini-key mini-black" style="--position:6" type="button" data-midi="70" data-note="A#" aria-label="A♯4"></button>
+      </div>
+    </div>
+  </section>
+
+  <dialog class="tone-stats-card" id="toneTrainingStats" aria-labelledby="toneTrainingStatsTitle">
+    <div class="tone-stats-content">
+      <div class="settings-header">
+        <h2 id="toneTrainingStatsTitle">Результат тренировки</h2>
+        <button class="dialog-close" id="toneTrainingStatsClose" type="button" aria-label="Закрыть статистику" title="Закрыть">×</button>
+      </div>
+      <div class="tone-stats-summary">
+        <div class="tone-stat"><span class="tone-stat-label">Правильных</span><strong class="tone-stat-value" id="toneTrainingCorrect">0</strong></div>
+        <div class="tone-stat"><span class="tone-stat-label">Ошибок</span><strong class="tone-stat-value" id="toneTrainingErrors">0</strong></div>
+      </div>
+      <h3 class="tone-history-title">Правильные ответы за последние 10 тренировок</h3>
+      <div class="tone-history-chart" id="toneTrainingHistoryChart" role="img" aria-label="График правильных ответов за последние тренировки"></div>
+      <div class="tone-stats-actions">
+        <button class="tone-stats-button" id="toneTrainingStatsDone" type="button">Закрыть</button>
+        <button class="tone-stats-button primary" id="toneTrainingRestart" type="button">Ещё раз</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="tone-stats-card" id="degreeTrainingStats" aria-labelledby="degreeTrainingStatsTitle">
+    <div class="tone-stats-content">
+      <div class="settings-header">
+        <h2 id="degreeTrainingStatsTitle">Результат тренировки</h2>
+        <button class="dialog-close" id="degreeTrainingStatsClose" type="button" aria-label="Закрыть статистику" title="Закрыть">×</button>
+      </div>
+      <div class="tone-stats-summary">
+        <div class="tone-stat"><span class="tone-stat-label">Правильных</span><strong class="tone-stat-value" id="degreeTrainingCorrect">0</strong></div>
+        <div class="tone-stat"><span class="tone-stat-label">Ошибок</span><strong class="tone-stat-value" id="degreeTrainingErrors">0</strong></div>
+      </div>
+      <h3 class="tone-history-title">Правильные ответы за последние 10 тренировок</h3>
+      <div class="tone-history-chart" id="degreeTrainingHistoryChart" role="img" aria-label="График правильных ответов за последние тренировки"></div>
+      <div class="tone-stats-actions">
+        <button class="tone-stats-button" id="degreeTrainingStatsDone" type="button">Закрыть</button>
+        <button class="tone-stats-button primary" id="degreeTrainingRestart" type="button">Ещё раз</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="app" id="pianoApp" hidden>
+    <button class="improv-icon improv-home" id="improvHome" type="button" aria-label="Вернуться на главный экран" title="Главный экран">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m4 11 8-7 8 7"/><path d="M6.5 9.5V20h11V9.5M9.5 20v-6h5v6"/></svg>
+    </button>
+    <header class="top-panel">
+      <div class="panel-heading">
+        <div class="brand"><h1>Piano</h1><span class="range">A0 — C8</span></div>
+        <span class="panel-title">Панель управления</span>
+      </div>
+      <div class="toolbar">
+        <div class="panel-workspace">
+          <section class="improv-panel" aria-label="Импровизация">
+            <span class="improv-title">Импровизация</span>
+            <div class="improv-actions" aria-label="Управление импровизацией">
+              <button class="improv-icon" id="improvSettingsButton" type="button" aria-label="Настройки импровизации" title="Настройки">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.55v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.1 15a1.7 1.7 0 0 0-1.5-1H2.5V10h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.56 4.2l.06.06A1.7 1.7 0 0 0 8.5 4.6a1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 18.9 9a1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1 .99Z"/></svg>
+              </button>
+              <button class="improv-icon improv-expand" id="improvExpand" type="button" aria-label="Развернуть импровизацию на весь экран" aria-pressed="false" title="На весь экран">
+                <svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M4 15v5h5M20 15v5h-5"/></svg>
+                <svg class="collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5"/></svg>
+              </button>
+              <button class="improv-icon improv-toggle" id="improvToggle" type="button" aria-label="Запустить импровизацию" aria-pressed="false" title="Play / Pause">
+                <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
+                <svg class="pause-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM14 5h4v14h-4z"/></svg>
+              </button>
+              <button class="improv-icon" id="improvStop" type="button" aria-label="Остановить импровизацию" title="Стоп">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              </button>
+              <input class="visually-hidden" id="improvSound" type="checkbox" aria-label="Звук импровизации" checked>
+              <label class="improv-icon sound-toggle" for="improvSound" aria-label="Включить или выключить звук импровизации" title="Звук вкл. / выкл.">
+                <svg class="sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></svg>
+                <svg class="sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m16 10 5 5m0-5-5 5"/></svg>
+              </label>
+            </div>
+            <div class="improv-readout" aria-label="Параметры импровизации">
+              <div class="readout-item"><span class="readout-label">Тональность</span><span class="readout-value" id="improvKeyDisplay">—</span></div>
+              <div class="readout-item"><span class="readout-label">Аккорд</span><span class="readout-value-stack"><span class="readout-value" id="improvChordDisplay">—</span><span class="next-readout" id="improvNextChordDisplay" aria-label="Следующий аккорд">—</span></span></div>
+              <div class="readout-item"><span class="readout-label">Ступень</span><span class="readout-value-stack"><span class="readout-value" id="improvDegreeDisplay">—</span><span class="next-readout" id="improvNextDegreeDisplay" aria-label="Следующая ступень">—</span></span></div>
+              <div class="readout-item chord-notes-item" id="improvNotesItem">
+                <span class="readout-label">Ноты аккорда</span>
+                <span class="readout-value chord-notes-value" id="improvNotesDisplay">—</span>
+                <button class="notes-visibility" id="improvNotesVisibility" type="button" aria-label="Скрыть ноты аккорда" aria-pressed="false" title="Скрыть ноты">
+                  <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg>
+                  <svg class="eye-off-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 3 18 18M10.6 6.1A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a15.8 15.8 0 0 1-2.3 3M6.2 6.2C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6a10 10 0 0 0 3.1-.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                </button>
+              </div>
+            </div>
+          </section>
+          <div class="future-space" aria-label="Знаки при ключе и управление клавиатурой">
+            <div class="key-signature-card" id="keySignatureCard" role="img" aria-label="Знаки при ключе">
+              <svg class="key-signature-staff" viewBox="0 0 320 225" aria-hidden="true">
+                <g>
+                  <line class="staff-line" x1="20" y1="67.5" x2="300" y2="67.5"/>
+                  <line class="staff-line" x1="20" y1="90" x2="300" y2="90"/>
+                  <line class="staff-line" x1="20" y1="112.5" x2="300" y2="112.5"/>
+                  <line class="staff-line" x1="20" y1="135" x2="300" y2="135"/>
+                  <line class="staff-line" x1="20" y1="157.5" x2="300" y2="157.5"/>
+                  <line class="staff-barline" x1="300" y1="67.5" x2="300" y2="157.5"/>
+                </g>
+                <g class="staff-clef" transform="translate(26 23.5) scale(2.25 2.53)">
+                  <g transform="matrix(1.010278 0 0 1.010278 -24.38602 -.986803)">
+                    <path d="M39.708934 63.678683C39.317094 65.77065 41.499606 70.115061 45.890584 70.256984C51.19892 70.428558 54.590321 66.367906 53.010333 59.740875L45.086538 23.171517C44.143281 18.81826 44.851281 16.457097 45.354941 15.049945C46.698676 11.295749 50.055822 9.7473042 50.873134 10.949208C51.339763 11.635413 52.468042 14.844006 49.256275 20.590821C46.751378 25.072835 35.096985 30.950138 34.2417 41.468011C33.501282 50.614249 43.075689 57.369301 51.339266 54.71374C56.825686 52.950639 59.653965 44.62402 56.258057 40.328987C47.29624 28.994371 32.923702 46.341263 46.846564 51.0935C45.332604 49.90238 44.300646 48.980054 44.1085 47.852721C42.237755 36.876941 58.741182 39.774741 54.294493 50.18735C52.466001 54.469045 45.080341 55.297323 40.874269 51.477433C37.350853 48.277521 35.787387 42.113231 39.708327 37.687888C45.018831 31.694223 51.288782 26.31366 52.954064 18.108736C54.923313 8.4061491 48.493821 .84188926 44.429027 10.385835C43.065093 13.588288 42.557016 16.803074 43.863006 22.963534L51.780549 60.311215C52.347386 62.985028 51.967911 66.664419 49.472374 68.355474C48.236187 69.193154 43.861784 69.769668 42.791575 67.770092"/>
+                    <ellipse cx="44.809425" cy="64.584198" rx="3.439605" ry="3.498705" transform="matrix(-1.08512 -.02036848 .02036848 -1.08512 90.68868 135.0572)"/>
+                  </g>
+                </g>
+                <g id="keySignatureAccidentals"></g>
+              </svg>
+            </div>
+            <div class="piano-controls-line" aria-label="Управление клавиатурой">
+              <button class="icon-btn compact-pedal" id="sustain" type="button" aria-label="Педаль" aria-pressed="false" title="Педаль"><span class="pedal-mark"></span></button>
+              <div class="zoom" aria-label="Масштаб клавиатуры">
+                <button class="icon-btn" id="zoomOut" type="button" aria-label="Показать больше клавиш">−</button>
+                <span class="status" id="zoomStatus">100%</span>
+                <button class="icon-btn" id="zoomIn" type="button" aria-label="Увеличить клавиши">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="instrument" aria-label="Фортепианная клавиатура">
+        <div class="fallboard" id="fallboard" title="Проведите по панели, чтобы переместить клавиатуру"><span class="maker">STEINWAY &amp; SONS · CONCERT CHARACTER</span></div>
+        <div class="range-nav" aria-label="Положение клавиатуры">
+          <button id="panLeft" type="button" aria-label="Прокрутить влево">‹</button>
+          <div id="rangeNavigator" class="scroll-track" role="slider" tabindex="0" aria-label="Перемещение по клавиатуре" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+            <span class="scroll-fill" id="scrollFill"></span><span class="scroll-thumb" id="scrollThumb"></span>
+          </div>
+          <button id="panRight" type="button" aria-label="Прокрутить вправо">›</button>
+        </div>
+        <div class="keyboard-scroll" id="scroll">
+          <div class="keyboard" id="keyboard"></div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <dialog id="toneTrainingSettings" aria-labelledby="toneTrainingSettingsTitle">
+    <form class="settings-form" id="toneTrainingSettingsForm" novalidate>
+      <div class="settings-header">
+        <h2 id="toneTrainingSettingsTitle">Настройки тренировки</h2>
+        <button class="dialog-close" id="toneTrainingSettingsClose" type="button" aria-label="Закрыть настройки" title="Закрыть">×</button>
+      </div>
+      <div class="settings-grid">
+        <section class="settings-section" aria-labelledby="toneSoundSettingTitle">
+          <span class="step-number" aria-hidden="true">1</span>
+          <span class="setting-title" id="toneSoundSettingTitle">Что звучит</span>
+          <div class="choice-row" role="radiogroup" aria-labelledby="toneSoundSettingTitle">
+            <label class="choice-line"><input type="radio" name="toneSoundMode" value="cadence" checked> I–IV–V–I</label>
+            <label class="choice-line"><input type="radio" name="toneSoundMode" value="all-degrees"> Все ступени</label>
+          </div>
+        </section>
+        <section class="settings-section" aria-labelledby="trainingTonalitiesTitle">
+          <span class="step-number" aria-hidden="true">2</span>
+          <span class="setting-title" id="trainingTonalitiesTitle">Какие тональности участвуют в тренировке</span>
+          <div class="training-selection-actions" aria-label="Управление выбором тональностей">
+            <button id="selectAllTrainingTonalities" type="button">Выбрать все</button>
+            <button id="clearTrainingTonalities" type="button">Снять выбор</button>
+          </div>
+          <div class="training-tonality-grid" id="trainingTonalityFields">
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="C" checked> C (До мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="Cm" checked> Cm (До минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="C♯" checked> C♯ (До♯ мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="C♯m" checked> C♯m (До♯ минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="D" checked> D (Ре мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="Dm" checked> Dm (Ре минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="D♯" checked> D♯ (Ре♯ мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="D♯m" checked> D♯m (Ре♯ минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="E" checked> E (Ми мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="Em" checked> Em (Ми минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="F" checked> F (Фа мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="Fm" checked> Fm (Фа минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="F♯" checked> F♯ (Фа♯ мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="F♯m" checked> F♯m (Фа♯ минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="G" checked> G (Соль мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="Gm" checked> Gm (Соль минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="G♯" checked> G♯ (Соль♯ мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="G♯m" checked> G♯m (Соль♯ минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="A" checked> A (Ля мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="Am" checked> Am (Ля минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="A♯" checked> A♯ (Ля♯ мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="A♯m" checked> A♯m (Ля♯ минор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="B" checked> B (Си мажор)</label>
+            <label class="training-tonality-option"><input type="checkbox" name="trainingTonality" value="Bm" checked> Bm (Си минор)</label>
+          </div>
+          <p class="settings-error" id="trainingTonalityError" role="alert" hidden></p>
+        </section>
+      </div>
+      <div class="settings-footer"><button class="modal-save" type="submit">Сохранить</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="degreeTrainingSettings" aria-labelledby="degreeTrainingSettingsTitle">
+    <form class="settings-form" id="degreeTrainingSettingsForm" novalidate>
+      <div class="settings-header">
+        <h2 id="degreeTrainingSettingsTitle">Настройки тренировки</h2>
+        <button class="dialog-close" id="degreeTrainingSettingsClose" type="button" aria-label="Закрыть настройки" title="Закрыть">×</button>
+      </div>
+      <div class="settings-grid">
+        <section class="settings-section" aria-labelledby="degreeModeSettingTitle">
+          <span class="step-number" aria-hidden="true">1</span>
+          <label class="setting-title" id="degreeModeSettingTitle" for="degreeTrainingMode">Лад</label>
+          <select id="degreeTrainingMode">
+            <option value="major">Мажор</option>
+            <option value="minor" selected>Минор</option>
+          </select>
+        </section>
+        <section class="settings-section" aria-labelledby="degreeKeySettingTitle">
+          <span class="step-number" aria-hidden="true">2</span>
+          <label class="setting-title" id="degreeKeySettingTitle" for="degreeTrainingKeyChoice">Тональность</label>
+          <select id="degreeTrainingKeyChoice"></select>
+          <p class="settings-helper">«Случайно» выбирает новую тональность внутри указанного лада для каждого задания.</p>
+        </section>
+      </div>
+      <div class="settings-footer"><button class="modal-save" type="submit">Сохранить</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="improvSettings" aria-labelledby="improvSettingsTitle">
+    <form class="settings-form" id="improvSettingsForm" novalidate>
+      <div class="settings-header">
+        <h2 id="improvSettingsTitle">Настройки импровизации</h2>
+        <button class="dialog-close" id="improvSettingsClose" type="button" aria-label="Закрыть настройки" title="Закрыть">×</button>
+      </div>
+      <div class="settings-grid">
+        <section class="settings-section" aria-labelledby="modeSettingTitle">
+          <span class="step-number" aria-hidden="true">1</span>
+          <label class="setting-title" id="modeSettingTitle" for="improvMode">Лад</label>
+          <select id="improvMode">
+            <option value="major">Мажор</option>
+            <option value="minor" selected>Минор</option>
+          </select>
+        </section>
+        <section class="settings-section" aria-labelledby="keySettingTitle">
+          <span class="step-number" aria-hidden="true">2</span>
+          <label class="setting-title" id="keySettingTitle" for="improvKey">Тональность</label>
+          <select id="improvKey">
+            <option value="random">Случайно</option>
+            <option value="C">C (До мажор)</option><option value="Cm">Cm (До минор)</option>
+            <option value="C♯">C♯ (До-диез мажор)</option><option value="C♯m">C♯m (До-диез минор)</option>
+            <option value="D">D (Ре мажор)</option><option value="Dm" selected>Dm (Ре минор)</option>
+            <option value="D♯">D♯ (Ре-диез мажор)</option><option value="D♯m">D♯m (Ре-диез минор)</option>
+            <option value="E">E (Ми мажор)</option><option value="Em">Em (Ми минор)</option>
+            <option value="F">F (Фа мажор)</option><option value="Fm">Fm (Фа минор)</option>
+            <option value="F♯">F♯ (Фа-диез мажор)</option><option value="F♯m">F♯m (Фа-диез минор)</option>
+            <option value="G">G (Соль мажор)</option><option value="Gm">Gm (Соль минор)</option>
+            <option value="G♯">G♯ (Соль-диез мажор)</option><option value="G♯m">G♯m (Соль-диез минор)</option>
+            <option value="A">A (Ля мажор)</option><option value="Am">Am (Ля минор)</option>
+            <option value="A♯">A♯ (Ля-диез мажор)</option><option value="A♯m">A♯m (Ля-диез минор)</option>
+            <option value="B">B (Си мажор)</option><option value="Bm">Bm (Си минор)</option>
+          </select>
+          <p class="settings-helper">«Случайно» выбирает тональность только внутри указанного лада.</p>
+        </section>
+        <section class="settings-section" aria-labelledby="presetSettingTitle">
+          <span class="step-number" aria-hidden="true">3</span>
+          <label class="setting-title" id="presetSettingTitle" for="improvProgressionPreset">Готовые прогрессии</label>
+          <select id="improvProgressionPreset">
+            <option value="manual">Задать вручную</option>
+          </select>
+          <p class="settings-helper">Список соответствует ладу, выбранному в пункте 1.</p>
+        </section>
+        <section class="settings-section" aria-labelledby="countSettingTitle">
+          <span class="step-number" aria-hidden="true">4</span>
+          <label class="setting-title" id="countSettingTitle" for="improvChordCount">Количество аккордов в прогрессии</label>
+          <div class="count-controls">
+            <input id="improvChordCount" type="number" min="1" max="12" step="1" value="4" inputmode="numeric" aria-describedby="countHint">
+            <label class="check-line"><input id="randomChordCount" type="checkbox"> Случайно</label>
+          </div>
+          <p class="settings-helper" id="countHint">Можно задать от 1 до 12 аккордов.</p>
+        </section>
+        <section class="settings-section" aria-labelledby="degreesSettingTitle">
+          <span class="step-number" aria-hidden="true">5</span>
+          <span class="setting-title" id="degreesSettingTitle">Ступени прогрессии</span>
+          <div class="choice-row" role="radiogroup" aria-labelledby="degreesSettingTitle">
+            <label class="choice-line"><input type="radio" name="degreeMode" value="manual" checked> Вручную</label>
+            <label class="choice-line"><input type="radio" name="degreeMode" value="random"> Случайно</label>
+          </div>
+          <div class="degree-fields" id="degreeFields"></div>
+          <p class="settings-helper">Каждая ступень выбирается от I до VII. Число полей совпадает с количеством аккордов.</p>
+          <p class="settings-error" id="degreeError" role="alert" hidden></p>
+        </section>
+        <div class="settings-bottom-row">
+          <section class="settings-section compact-setting" aria-labelledby="durationSettingTitle">
+            <span class="step-number" aria-hidden="true">6</span>
+            <label class="setting-title" id="durationSettingTitle" for="secondsPerChord">сек / аккорд</label>
+            <input id="secondsPerChord" type="number" min="1" max="20" step="1" value="4" inputmode="numeric">
+            <p class="settings-helper">От 1 до 20 секунд.</p>
+          </section>
+          <section class="settings-section compact-setting" aria-labelledby="cycleSettingTitle">
+            <span class="step-number" aria-hidden="true">7</span>
+            <span class="setting-title" id="cycleSettingTitle">Циклично</span>
+            <label class="check-line cycle-line"><input id="improvLoop" type="checkbox" checked> <span id="improvLoopLabel">Да</span></label>
+            <p class="settings-helper">Повторять прогрессию после последнего аккорда.</p>
+          </section>
+        </div>
+        <div class="settings-bottom-row">
+          <section class="settings-section compact-setting" aria-labelledby="hitsSettingTitle">
+            <span class="step-number" aria-hidden="true">8</span>
+            <label class="setting-title" id="hitsSettingTitle" for="hitsPerChord">Кол-во нажатий на такт</label>
+            <input id="hitsPerChord" type="number" min="1" max="4" step="1" value="1" inputmode="numeric">
+            <p class="settings-helper">От 1 до 4, равномерно за время одного аккорда.</p>
+          </section>
+          <section class="settings-section compact-setting" aria-labelledby="octavesSettingTitle">
+            <span class="step-number" aria-hidden="true">9</span>
+            <label class="setting-title check-line cycle-line" id="octavesSettingTitle"><span>Октавы</span><input id="improvOctaves" type="checkbox"></label>
+            <p class="settings-helper">Нота текущей ступени и та же нота октавой ниже.</p>
+          </section>
+        </div>
+      </div>
+      <div class="settings-footer"><button class="modal-save" type="submit">Сохранить</button></div>
+    </form>
+  </dialog>
+
+  <script>
+    const NOTE_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+    const BLACK = new Set([1,3,6,8,10]);
+    const MIDI_START = 21, MIDI_END = 108;
+    const DEFAULT_VOLUME = 72;
+    const APP_STORAGE_KEY = 'piano-practice-settings-v1';
+    function loadUserPreferences() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) || 'null');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch { return {}; }
+    }
+    const savedPreferences = loadUserPreferences();
+    let persistenceReady = false;
+    let persistenceTimer = 0;
+    const pianoApp = document.getElementById('pianoApp');
+    const homeScreen = document.getElementById('homeScreen');
+    const earTrainingScreen = document.getElementById('earTrainingScreen');
+    const toneTrainingScreen = document.getElementById('toneTrainingScreen');
+    const degreeTrainingScreen = document.getElementById('degreeTrainingScreen');
+    const openImprovisation = document.getElementById('openImprovisation');
+    const openEarTraining = document.getElementById('openEarTraining');
+    const openToneTraining = document.getElementById('openToneTraining');
+    const openDegreeTraining = document.getElementById('openDegreeTraining');
+    const earTrainingBack = document.getElementById('earTrainingBack');
+    const toneTrainingBack = document.getElementById('toneTrainingBack');
+    const toneTrainingHome = document.getElementById('toneTrainingHome');
+    const toneTrainingSettingsButton = document.getElementById('toneTrainingSettingsButton');
+    const toneTrainingStartButton = document.getElementById('toneTrainingStartButton');
+    const toneTrainingSession = document.getElementById('toneTrainingSession');
+    const toneTrainingRepeat = document.getElementById('toneTrainingRepeat');
+    const toneTrainingResultCells = Array.from(document.querySelectorAll('[data-tone-result]'));
+    const toneTrainingStats = document.getElementById('toneTrainingStats');
+    const toneTrainingStatsClose = document.getElementById('toneTrainingStatsClose');
+    const toneTrainingStatsDone = document.getElementById('toneTrainingStatsDone');
+    const toneTrainingRestart = document.getElementById('toneTrainingRestart');
+    const toneTrainingCorrect = document.getElementById('toneTrainingCorrect');
+    const toneTrainingErrors = document.getElementById('toneTrainingErrors');
+    const toneTrainingHistoryChart = document.getElementById('toneTrainingHistoryChart');
+    const toneMiniPiano = document.getElementById('toneMiniPiano');
+    const toneTrainingSettings = document.getElementById('toneTrainingSettings');
+    const toneTrainingSettingsForm = document.getElementById('toneTrainingSettingsForm');
+    const toneTrainingSettingsClose = document.getElementById('toneTrainingSettingsClose');
+    const selectAllTrainingTonalities = document.getElementById('selectAllTrainingTonalities');
+    const clearTrainingTonalities = document.getElementById('clearTrainingTonalities');
+    const trainingTonalityFields = document.getElementById('trainingTonalityFields');
+    const trainingTonalityError = document.getElementById('trainingTonalityError');
+    const degreeTrainingBack = document.getElementById('degreeTrainingBack');
+    const degreeTrainingHome = document.getElementById('degreeTrainingHome');
+    const degreeTrainingSettingsButton = document.getElementById('degreeTrainingSettingsButton');
+    const degreeTrainingStartButton = document.getElementById('degreeTrainingStartButton');
+    const degreeTrainingSession = document.getElementById('degreeTrainingSession');
+    const degreeTrainingRepeat = document.getElementById('degreeTrainingRepeat');
+    const degreeTrainingKey = document.getElementById('degreeTrainingKey');
+    const degreeTrainingButtons = document.getElementById('degreeTrainingButtons');
+    const degreeButtons = Array.from(degreeTrainingButtons.querySelectorAll('[data-degree]'));
+    const degreeTrainingResultCells = Array.from(document.querySelectorAll('[data-degree-result]'));
+    const degreeTrainingStats = document.getElementById('degreeTrainingStats');
+    const degreeTrainingStatsClose = document.getElementById('degreeTrainingStatsClose');
+    const degreeTrainingStatsDone = document.getElementById('degreeTrainingStatsDone');
+    const degreeTrainingRestart = document.getElementById('degreeTrainingRestart');
+    const degreeTrainingCorrect = document.getElementById('degreeTrainingCorrect');
+    const degreeTrainingErrors = document.getElementById('degreeTrainingErrors');
+    const degreeTrainingHistoryChart = document.getElementById('degreeTrainingHistoryChart');
+    const degreeTrainingSettings = document.getElementById('degreeTrainingSettings');
+    const degreeTrainingSettingsForm = document.getElementById('degreeTrainingSettingsForm');
+    const degreeTrainingSettingsClose = document.getElementById('degreeTrainingSettingsClose');
+    const degreeTrainingMode = document.getElementById('degreeTrainingMode');
+    const degreeTrainingKeyChoice = document.getElementById('degreeTrainingKeyChoice');
+    const improvHome = document.getElementById('improvHome');
+    const keyboard = document.getElementById('keyboard');
+    const scroller = document.getElementById('scroll');
+    const sustainButton = document.getElementById('sustain');
+    const zoomStatus = document.getElementById('zoomStatus');
+    const fallboard = document.getElementById('fallboard');
+    const rangeNavigator = document.getElementById('rangeNavigator');
+    const scrollFill = document.getElementById('scrollFill');
+    const scrollThumb = document.getElementById('scrollThumb');
+    const improvPanel = document.querySelector('.improv-panel');
+    const improvSettingsButton = document.getElementById('improvSettingsButton');
+    const improvExpand = document.getElementById('improvExpand');
+    const improvSettings = document.getElementById('improvSettings');
+    const improvToggle = document.getElementById('improvToggle');
+    const improvStop = document.getElementById('improvStop');
+    const improvSound = document.getElementById('improvSound');
+    const improvSettingsForm = document.getElementById('improvSettingsForm');
+    const improvSettingsClose = document.getElementById('improvSettingsClose');
+    const improvMode = document.getElementById('improvMode');
+    const improvKey = document.getElementById('improvKey');
+    const improvProgressionPreset = document.getElementById('improvProgressionPreset');
+    const improvChordCount = document.getElementById('improvChordCount');
+    const randomChordCount = document.getElementById('randomChordCount');
+    const degreeFields = document.getElementById('degreeFields');
+    const degreeError = document.getElementById('degreeError');
+    const improvKeyDisplay = document.getElementById('improvKeyDisplay');
+    const improvChordDisplay = document.getElementById('improvChordDisplay');
+    const improvDegreeDisplay = document.getElementById('improvDegreeDisplay');
+    const improvNextChordDisplay = document.getElementById('improvNextChordDisplay');
+    const improvNextDegreeDisplay = document.getElementById('improvNextDegreeDisplay');
+    const improvNotesDisplay = document.getElementById('improvNotesDisplay');
+    const improvNotesItem = document.getElementById('improvNotesItem');
+    const improvNotesVisibility = document.getElementById('improvNotesVisibility');
+    const keySignatureCard = document.getElementById('keySignatureCard');
+    const keySignatureAccidentals = document.getElementById('keySignatureAccidentals');
+    const secondsPerChord = document.getElementById('secondsPerChord');
+    const improvLoop = document.getElementById('improvLoop');
+    const improvLoopLabel = document.getElementById('improvLoopLabel');
+    const hitsPerChord = document.getElementById('hitsPerChord');
+    const improvOctaves = document.getElementById('improvOctaves');
+    const TONALITY_OPTIONS = Array.from(improvKey.options)
+      .filter(option => option.value !== 'random')
+      .map(option => ({ value: option.value, label: option.textContent, mode: option.value.endsWith('m') ? 'minor' : 'major' }));
+    const DEGREES = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+    const DEFAULT_IMPROV_DEGREES = ['I', 'VI', 'IV', 'V'];
+    const TRAINING_TONALITIES = TONALITY_OPTIONS.map(option => option.value);
+    const storedToneTraining = savedPreferences.earTraining?.tone;
+    const storedTrainingTonalities = Array.isArray(storedToneTraining?.tonalities)
+      ? [...new Set(storedToneTraining.tonalities.filter(value => TRAINING_TONALITIES.includes(value)))]
+      : [];
+    let toneTrainingConfig = {
+      soundMode: storedToneTraining?.soundMode === 'all-degrees' ? 'all-degrees' : 'cadence',
+      tonalities: storedTrainingTonalities.length ? storedTrainingTonalities : TRAINING_TONALITIES.slice()
+    };
+    let toneTrainingHistory = Array.isArray(storedToneTraining?.history)
+      ? storedToneTraining.history.map(entry => {
+          const correct = Number(typeof entry === 'object' && entry !== null ? entry.correct : entry);
+          const errors = Number(typeof entry === 'object' && entry !== null ? entry.errors : 10 - correct);
+          return { correct, errors };
+        }).filter(entry => Number.isInteger(entry.correct) && entry.correct >= 0 && entry.correct <= 10 && Number.isInteger(entry.errors) && entry.errors >= 0 && entry.errors <= 10 && entry.correct + entry.errors === 10).slice(-10)
+      : [];
+    let toneTrainingState = { active: false, index: 0, currentTonality: null, hadError: false, acceptingAnswer: false, lastTonality: null };
+    let toneTrainingTimers = [];
+    let toneTrainingChordNotes = [];
+    const storedDegreeTraining = savedPreferences.earTraining?.degree;
+    const storedDegreeMode = storedDegreeTraining?.mode === 'major' ? 'major' : 'minor';
+    const storedDegreeKey = typeof storedDegreeTraining?.keyChoice === 'string' ? storedDegreeTraining.keyChoice : 'random';
+    let degreeTrainingConfig = {
+      mode: storedDegreeMode,
+      keyChoice: storedDegreeKey === 'random' || TONALITY_OPTIONS.some(option => option.mode === storedDegreeMode && option.value === storedDegreeKey) ? storedDegreeKey : 'random'
+    };
+    let degreeTrainingHistory = Array.isArray(storedDegreeTraining?.history)
+      ? storedDegreeTraining.history.map(entry => {
+          const correct = Number(typeof entry === 'object' && entry !== null ? entry.correct : entry);
+          const errors = Number(typeof entry === 'object' && entry !== null ? entry.errors : 10 - correct);
+          return { correct, errors };
+        }).filter(entry => Number.isInteger(entry.correct) && entry.correct >= 0 && entry.correct <= 10 && Number.isInteger(entry.errors) && entry.errors >= 0 && entry.errors <= 10 && entry.correct + entry.errors === 10).slice(-10)
+      : [];
+    let degreeTrainingState = { active: false, index: 0, currentTonality: null, currentDegree: null, hadError: false, acceptingAnswer: false, lastTonality: null, lastDegree: null };
+    let degreeTrainingTimers = [];
+    let degreeTrainingChordNotes = [];
+    const READY_PROGRESSIONS = `
+1|Axis Progression|I-V-vi-IV|major
+2|Axis Rotation|vi-IV-I-V|major
+3|Call Me Maybe|IV-I-V-vi|major
+4|50s / Doo-Wop|I-vi-IV-V|major
+5|Three-Chord Trick|I-IV-V|major
+6|Wagon Wheel Turn|I-V-IV|major
+7|American Pie Turn|I-IV-I-V|major
+8|Walk the Line|V-I-V-I-IV|major
+9|Waka Waka|I-V-vi|major
+10|Little Talks|vi-IV-I|major
+11|Baby|I-vi-IV|major
+12|Stand By Me Return|I-vi-IV-V-I|major
+13|Starlight|IV-V-I-vi|major
+14|Brown Eyed Girl|IV-V-I-V|major
+15|The Reason|I-vi-I-vi-IV-V|major
+16|Slow Down|I-vi-V|major
+17|Slow Down Return|I-vi-V-I|major
+18|Escape from the City|I-vi-IV-V-vi-V|major
+19|Ooh La La|IV-V-I-vi-IV|major
+20|Girl on Fire|I-vi-IV-I-IV-V|major
+21|Axis Homecoming|I-V-vi-IV-I|major
+22|Beast of Burden Turn|I-V-vi-IV-V|major
+23|Rude Turn|IV-V-I-V-vi|major
+24|Trouble Rise|vi-IV-V-I|major
+25|Trouble Extended|vi-IV-V-I-V|major
+26|Edge of Glory|I-V-vi-IV-I-V|major
+27|So Small Cycle|vi-IV-I-V-vi|major
+28|Tidal Wave|IV-I-V-vi-IV|major
+29|She Will Be Loved|I-V-vi-IV-I-V-vi-IV|major
+30|Little Talks Cycle|vi-IV-I-V-vi-IV-I-V|major
+31|Royal Road|IV-V-iii-vi|major
+32|Royal Road Extended|IV-V-iii-vi-ii-V-I|major
+33|Circle Turnaround|iii-vi-ii-V|major
+34|Nyan Cat Circle|vi-ii-V-I|major
+35|Circle Continuation|ii-V-I-IV|major
+36|Colorful Road|IV-V-iii-vi-ii-V|major
+37|Pretty Melody|I-vi-IV-V-iii-vi-ii-V|major
+38|Hikare|IV-V-iii-vi-IV|major
+39|Let Her Go Turn|vi-IV-V-iii|major
+40|Pokémon Surf|IV-V-iii-vi-IV-V-iii-vi|major
+41|Nyan Cat Eight|IV-V-iii-vi-ii-V-I-IV|major
+42|Undo|vi-I-IV-V|major
+43|Break My Stride|I-IV-V-iii-vi|major
+44|Dear Boy|IV-V-vi-I|major
+45|Dear Boy Chorus|IV-V-vi-iii|major
+46|Still Alive|I-V-IV-V-I|major
+47|Always|vi-iii-V-IV|major
+48|Always Return|iii-V-IV-I|major
+49|Don’t Stop Believin’|I-V-iii-IV|major
+50|Pachelbel Canon|I-V-vi-iii-IV-I-IV-V|major
+51|Do I Wanna Know?|i-VI-iv-V|minor
+52|Gangsta’s Paradise Turn|VI-iv-V-i|minor
+53|Succession Turn|iv-V-i-VI|minor
+54|High by the Beach Turn|V-i-VI-iv|minor
+55|Potential Breakup Song|i-III-VI-V|minor
+56|Fly on the Wall Turn|III-VI-V-i|minor
+57|Girlving Turn|VI-V-i-III|minor
+58|KING Turn|V-i-III-VI|minor
+59|House of Memories|i-VI-III-V|minor
+60|Take Flight Turn|VI-III-V-i|minor
+61|Propane Nightmares|III-V-i-VI|minor
+62|New Born Turn|V-i-VI-III|minor
+63|Back to Black|i-iv-VI-V|minor
+64|Born to Make You Happy|iv-VI-V-i|minor
+65|1989 Turn|VI-V-i-iv|minor
+66|Misery Turn|V-i-iv-VI|minor
+67|Hysteria|i-V-iv-i|minor
+68|Hysteria Rotation|V-iv-i-V|minor
+69|Hysteria Cycle|iv-i-V-iv|minor
+70|Nah Neh Nah|i-V-i|minor
+71|Misery Dominant Loop|V-i-V|minor
+72|Classical Minor Cadence|i-iv-V-i|minor
+73|Vivaldi Minor Turn|iv-V-i-iv|minor
+74|Jinsei Kakurenbo|V-i-iv-V|minor
+75|Humanity|i-VI-iv-V-i|minor
+76|Snakes on a Plane|i-III-VI-V-i|minor
+77|Golden Days|i-VI-III-V-i|minor
+78|Sucker for Pain|i-iv-VI-V-i|minor
+79|Succession Main Title|i-VI-iv-V-i-VI-iv-V|minor
+80|KING|i-III-VI-V-i-III-VI-V|minor
+81|Kill Em With Kindness|i-VI-III-V-i-VI-III-V|minor
+82|Back to Black Cycle|i-iv-VI-V-i-iv-VI-V|minor
+83|Hysteria Cycle II|i-V-iv-i-V-iv-i|minor
+84|New Born Dominant|i-V-i-V-i|minor
+85|New Born Verse|i-V-i-V-i-VI-III-V|minor
+86|Rumour Has It|i-iv-VI-V-iv|minor
+87|Misery|i-V-i-iv-VI-V-i|minor
+88|Misery Chorus|V-i-V-i-V-i-iv-VI-V|minor
+89|1989|VI-V-i-iv-VI-V-i|minor
+90|Rabbithole|VI-V-i-VI-V-i-iv|minor
+91|Hermit the Frog Turn|iv-i-VI-V-i|minor
+92|Hermit the Frog|i-III-iv-i-VI-iv-V|minor
+93|Hermit Return|i-iv-i-VI-iv-V-i|minor
+94|Dodsot|i-VI-iv-V-i-VI-iv-V-i|minor
+95|Gangsta’s Paradise|VI-iv-V-i-VI-iv-V-i|minor
+96|The Thumbs Song|i-V-i-VI-iv-V|minor
+97|Thumbs Extended|i-V-i-VI-iv-V-iv-i|minor
+98|30 Minutes|i-VI-iv-V-i-VI-iv-V|minor
+99|Never Say Die|i-iv-VI-V-i|minor
+100|The Killing Kind|i-VI-iv-V-i-VI-iv-V|minor
+    `.trim().split('\n').map(row => {
+      const [id, name, progression, mode] = row.split('|');
+      return { id, name, progression, mode, degrees: progression.toUpperCase().split('-') };
+    });
+    const MAJOR_INTERVALS = [0, 2, 4, 5, 7, 9, 11];
+    const MINOR_FUNCTION_CHORDS = [[0,3,7], [2,5,8], [3,7,10], [5,8,0], [7,11,2], [8,0,3], [10,2,5]];
+    const MINOR_FUNCTION_NAMES = [[0,2,4], [1,3,5], [2,4,6], [3,5,0], [4,'leading',1], [5,0,2], [6,1,3]];
+    const TONALITY_DATA = {
+      C:{root:0,notes:['C','D','E','F','G','A','B']}, Cm:{root:0,minor:true,leading:'B',notes:['C','D','E♭','F','G','A♭','B♭']},
+      'C♯':{root:1,notes:['C♯','D♯','E♯','F♯','G♯','A♯','B♯']}, 'C♯m':{root:1,minor:true,leading:'B♯',notes:['C♯','D♯','E','F♯','G♯','A','B']},
+      D:{root:2,notes:['D','E','F♯','G','A','B','C♯']}, Dm:{root:2,minor:true,leading:'C♯',notes:['D','E','F','G','A','B♭','C']},
+      'D♯':{root:3,notes:['D♯','E♯','F𝄪','G♯','A♯','B♯','C𝄪']}, 'D♯m':{root:3,minor:true,leading:'C𝄪',notes:['D♯','E♯','F♯','G♯','A♯','B','C♯']},
+      E:{root:4,notes:['E','F♯','G♯','A','B','C♯','D♯']}, Em:{root:4,minor:true,leading:'D♯',notes:['E','F♯','G','A','B','C','D']},
+      F:{root:5,notes:['F','G','A','B♭','C','D','E']}, Fm:{root:5,minor:true,leading:'E',notes:['F','G','A♭','B♭','C','D♭','E♭']},
+      'F♯':{root:6,notes:['F♯','G♯','A♯','B','C♯','D♯','E♯']}, 'F♯m':{root:6,minor:true,leading:'E♯',notes:['F♯','G♯','A','B','C♯','D','E']},
+      G:{root:7,notes:['G','A','B','C','D','E','F♯']}, Gm:{root:7,minor:true,leading:'F♯',notes:['G','A','B♭','C','D','E♭','F']},
+      'G♯':{root:8,notes:['G♯','A♯','B♯','C♯','D♯','E♯','F𝄪']}, 'G♯m':{root:8,minor:true,leading:'F𝄪',notes:['G♯','A♯','B','C♯','D♯','E','F♯']},
+      A:{root:9,notes:['A','B','C♯','D','E','F♯','G♯']}, Am:{root:9,minor:true,leading:'G♯',notes:['A','B','C','D','E','F','G']},
+      'A♯':{root:10,notes:['A♯','B♯','C𝄪','D♯','E♯','F𝄪','G𝄪']}, 'A♯m':{root:10,minor:true,leading:'G𝄪',notes:['A♯','B♯','C♯','D♯','E♯','F♯','G♯']},
+      B:{root:11,notes:['B','C♯','D♯','E','F♯','G♯','A♯']}, Bm:{root:11,minor:true,leading:'A♯',notes:['B','C♯','D','E','F♯','G','A']}
+    };
+    const KEY_SIGNATURES = {
+      C:{type:'natural',count:0}, Cm:{type:'flat',count:3},
+      'C♯':{type:'sharp',count:7}, 'C♯m':{type:'sharp',count:4},
+      D:{type:'sharp',count:2}, Dm:{type:'flat',count:1},
+      'D♯':{type:'sharp',count:7,total:9,doubleCount:2}, 'D♯m':{type:'sharp',count:6},
+      E:{type:'sharp',count:4}, Em:{type:'sharp',count:1},
+      F:{type:'flat',count:1}, Fm:{type:'flat',count:4},
+      'F♯':{type:'sharp',count:6}, 'F♯m':{type:'sharp',count:3},
+      G:{type:'sharp',count:1}, Gm:{type:'flat',count:2},
+      'G♯':{type:'sharp',count:7,total:8,doubleCount:1}, 'G♯m':{type:'sharp',count:5},
+      A:{type:'sharp',count:3}, Am:{type:'natural',count:0},
+      'A♯':{type:'sharp',count:7,total:10,doubleCount:3}, 'A♯m':{type:'sharp',count:7},
+      B:{type:'sharp',count:5}, Bm:{type:'sharp',count:2}
+    };
+    const SHARP_SIGNATURE = { symbol:'♯', notes:['F','C','G','D','A','E','B'], y:[67.5,101.25,56.25,90,123.75,78.75,112.5] };
+    const FLAT_SIGNATURE = { symbol:'♭', notes:['B','E','A','D','G','C','F'], y:[112.5,78.75,123.75,90,135,101.25,146.25] };
+    function renderKeySignature(tonality) {
+      const signature = KEY_SIGNATURES[tonality] || KEY_SIGNATURES.C;
+      const pattern = signature.type === 'flat' ? FLAT_SIGNATURE : SHARP_SIGNATURE;
+      const fragment = document.createDocumentFragment();
+      for (let index = 0; index < signature.count; index++) {
+        const accidental = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        accidental.setAttribute('class', 'staff-accidental');
+        accidental.setAttribute('transform', `translate(${124 + index * 21} ${pattern.y[index]})`);
+        const isDoubleSharp = signature.type === 'sharp' && index < (signature.doubleCount || 0);
+        if (isDoubleSharp) {
+          const mark = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          mark.setAttribute('d', 'M-15-22.5h7l8 12 8-12h7v10.5L7 0l8 12v10.5H8L0 10.5l-8 12h-7V12l8-12-8-12Z');
+          mark.setAttribute('fill', 'currentColor');
+          mark.setAttribute('transform', 'scale(.62)');
+          accidental.appendChild(mark);
+        } else if (signature.type === 'flat') {
+          const mark = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          mark.setAttribute('d', 'M -3 -22 v38 M -3 -4 C4 -11 9 -7 9 0 C9 7 4 11 -3 15');
+          mark.setAttribute('fill', 'none');
+          mark.setAttribute('stroke', 'currentColor');
+          mark.setAttribute('stroke-width', '1.5');
+          mark.setAttribute('stroke-linecap', 'round');
+          mark.setAttribute('stroke-linejoin', 'round');
+          accidental.appendChild(mark);
+        } else {
+          const strokes = [[-4.5,-20,-6,20],[5.5,-20,4,20],[-10,-7.5,10,-11],[-10,8.5,10,5]];
+          strokes.forEach(([x1,y1,x2,y2], strokeIndex) => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', String(x1)); line.setAttribute('y1', String(y1));
+            line.setAttribute('x2', String(x2)); line.setAttribute('y2', String(y2));
+            line.setAttribute('stroke', 'currentColor');
+            line.setAttribute('stroke-width', '1.5');
+            line.setAttribute('stroke-linecap', 'square');
+            accidental.appendChild(line);
+          });
+        }
+        fragment.appendChild(accidental);
+      }
+      keySignatureAccidentals.replaceChildren(fragment);
+      const names = pattern.notes.slice(0, signature.count).map((note, index) => `${note}${signature.type === 'sharp' && index < (signature.doubleCount || 0) ? '𝄪' : pattern.symbol}`);
+      const description = signature.count === 0
+        ? 'Без знаков'
+        : `${signature.total || signature.count} ${signature.type === 'sharp' ? '♯' : '♭'}`;
+      keySignatureCard.setAttribute('aria-label', `${tonality}: ${description}; ${names.join(', ')}`);
+    }
+    let improvConfig = null;
+    let improvState = 'stopped';
+    let improvNotesAreHidden = false;
+    let improvIndex = 0;
+    let improvTimer = 0;
+    let improvPulseTimers = [];
+    let improvChordNotes = [];
+    let improvChordStartedAt = 0;
+    let improvChordDuration = 0;
+    let improvStepElapsed = 0;
+    let improvRemaining = 0;
+    let randomTonality = '';
+    let improvisationOpened = false;
+    let whiteIndex = 0;
+
+    function saveUserPreferences() {
+      if (!persistenceReady || !improvConfig) return;
+      const position = lastKnownViewPosition;
+      const payload = {
+        version: 1,
+        improvisation: {
+          mode: improvConfig.mode,
+          keyChoice: improvConfig.keyChoice,
+          tonality: improvConfig.tonality,
+          preset: improvConfig.preset,
+          degrees: improvConfig.degrees.slice(),
+          seconds: improvConfig.seconds,
+          loop: improvConfig.loop,
+          hits: improvConfig.hits,
+          octaves: improvConfig.octaves,
+          sound: improvSound.checked,
+          randomChordCount: Boolean(improvConfig.randomChordCount),
+          degreeMode: improvConfig.degreeMode || 'manual'
+        },
+        keyboard: { whiteWidth, position: Math.max(0, Math.min(1, position)) },
+        audio: { volume: piano.volume, pedal: piano.pedal },
+        earTraining: {
+          tone: { soundMode: toneTrainingConfig.soundMode, tonalities: toneTrainingConfig.tonalities.slice(), history: toneTrainingHistory.slice(-10).map(entry => ({ correct: entry.correct, errors: entry.errors })) },
+          degree: { mode: degreeTrainingConfig.mode, keyChoice: degreeTrainingConfig.keyChoice, history: degreeTrainingHistory.slice(-10).map(entry => ({ correct: entry.correct, errors: entry.errors })) }
+        }
+      };
+      try { localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(payload)); } catch {}
+    }
+    function schedulePreferencesSave() {
+      if (!persistenceReady) return;
+      clearTimeout(persistenceTimer);
+      persistenceTimer = window.setTimeout(saveUserPreferences, 140);
+    }
+
+    for (let midi = MIDI_START; midi <= MIDI_END; midi++) {
+      const pitch = midi % 12;
+      const octave = Math.floor(midi / 12) - 1;
+      const key = document.createElement('button');
+      key.type = 'button';
+      key.className = `key ${BLACK.has(pitch) ? 'black' : 'white'}`;
+      key.dataset.midi = midi;
+      key.dataset.whiteIndex = whiteIndex;
+      key.setAttribute('aria-label', `${NOTE_NAMES[pitch]}${octave}`);
+      if (BLACK.has(pitch)) {
+        key.style.left = `calc(${whiteIndex} * var(--white-key))`;
+      } else {
+        key.style.left = `calc(${whiteIndex} * var(--white-key))`;
+        if (pitch === 0) key.innerHTML = `<span class="note-label">C${octave}</span>`;
+        whiteIndex++;
+      }
+      keyboard.appendChild(key);
+    }
+
+    const GRAND_PIANO_SAMPLE_BASE = 'https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3-velocity';
+    const GRAND_PIANO_SAMPLE_VERSION = '1.0.5';
+    const GRAND_PIANO_LAYERS = [5, 10, 15];
+    const GRAND_PIANO_ANCHORS = [21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93, 96, 99, 102, 105, 108];
+    const SAMPLE_NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+    class PianoEngine {
+      constructor() {
+        this.ctx = null; this.master = null; this.reverb = null; this.dry = null;
+        const storedVolume = Number(savedPreferences.audio?.volume);
+        this.volume = Number.isFinite(storedVolume) ? Math.max(0, Math.min(100, storedVolume)) : DEFAULT_VOLUME;
+        this.voices = new Map(); this.sustained = new Set(); this.pedal = false; this.unlocked = false;
+        this.samples = new Map(); this.sampleLoads = new Map(); this.dynamicSampleKeys = []; this.samplesStarted = false; this.samplesLoaded = 0; this.samplesFailed = 0;
+      }
+      init() {
+        if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+        const AC = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AC({ latencyHint: 'interactive' });
+        this.master = this.ctx.createGain();
+        this.master.gain.value = Math.pow(this.volume / 100, 1.6) * .66;
+        this.dry = this.ctx.createGain(); this.dry.gain.value = .86;
+        this.reverb = this.ctx.createConvolver();
+        const length = Math.floor(this.ctx.sampleRate * 2.1);
+        const impulse = this.ctx.createBuffer(2, length, this.ctx.sampleRate);
+        for (let c = 0; c < 2; c++) {
+          const data = impulse.getChannelData(c);
+          for (let i = 0; i < length; i++) {
+            const t = i / this.ctx.sampleRate;
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.7) * (1 - Math.exp(-t * 24));
+          }
+        }
+        this.reverb.buffer = impulse;
+        const wet = this.ctx.createGain(); wet.gain.value = .16;
+        this.dry.connect(this.master); this.reverb.connect(wet).connect(this.master);
+        const compressor = this.ctx.createDynamicsCompressor();
+        compressor.threshold.value = -15; compressor.knee.value = 20; compressor.ratio.value = 2.6; compressor.attack.value = .006; compressor.release.value = .34;
+        const warmth = this.ctx.createBiquadFilter(); warmth.type = 'peaking'; warmth.frequency.value = 320; warmth.Q.value = .72; warmth.gain.value = 1.7;
+        const presence = this.ctx.createBiquadFilter(); presence.type = 'peaking'; presence.frequency.value = 2850; presence.Q.value = .8; presence.gain.value = 1.2;
+        this.master.connect(warmth).connect(presence).connect(compressor).connect(this.ctx.destination);
+      }
+      unlock() {
+        this.init();
+        this.primeSamples();
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+        if (this.unlocked) return;
+        const source = this.ctx.createBufferSource();
+        source.buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+        source.connect(this.ctx.destination); source.start(0);
+        this.unlocked = true;
+        document.documentElement.dataset.audioReady = 'true';
+        document.documentElement.dataset.audioGain = String(this.master.gain.value);
+      }
+      sampleFile(midi, layer) {
+        const note = SAMPLE_NOTE_NAMES[midi % 12];
+        const octave = Math.floor(midi / 12) - 1;
+        return `${note}${octave}v${layer}.mp3`;
+      }
+      async loadSample(midi, layer) {
+        const key = `${layer}:${midi}`;
+        if (this.samples.has(key)) return;
+        if (this.sampleLoads.has(key)) return this.sampleLoads.get(key);
+        const file = encodeURIComponent(this.sampleFile(midi, layer));
+        const url = `${GRAND_PIANO_SAMPLE_BASE}${layer}@${GRAND_PIANO_SAMPLE_VERSION}/audio/${file}`;
+        const request = (async () => {
+          try {
+            const response = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+            if (!response.ok) throw new Error(`Sample ${response.status}`);
+            const buffer = await this.ctx.decodeAudioData(await response.arrayBuffer());
+            this.samples.set(key, buffer);
+            if (layer !== 10) {
+              this.dynamicSampleKeys.push(key);
+              while (this.dynamicSampleKeys.length > 18) this.samples.delete(this.dynamicSampleKeys.shift());
+            }
+            this.samplesLoaded += 1;
+            document.documentElement.dataset.pianoSamples = `${this.samplesLoaded}`;
+          } catch {
+            this.samplesFailed += 1;
+            document.documentElement.dataset.pianoSampleFallback = 'true';
+          } finally {
+            this.sampleLoads.delete(key);
+          }
+        })();
+        this.sampleLoads.set(key, request);
+        return request;
+      }
+      primeSamples() {
+        if (this.samplesStarted || !this.ctx) return;
+        this.samplesStarted = true;
+        document.documentElement.dataset.pianoSamples = 'loading';
+        const central = GRAND_PIANO_ANCHORS.filter(midi => midi >= 45 && midi <= 84).sort((a, b) => Math.abs(a - 60) - Math.abs(b - 60));
+        const outer = GRAND_PIANO_ANCHORS.filter(midi => midi < 45 || midi > 84).sort((a, b) => Math.abs(a - 60) - Math.abs(b - 60));
+        const jobs = [...central.map(midi => [midi, 10]), ...outer.map(midi => [midi, 10])];
+        let cursor = 0;
+        const worker = async () => {
+          while (cursor < jobs.length) {
+            const [midi, layer] = jobs[cursor++];
+            await this.loadSample(midi, layer);
+          }
+        };
+        Promise.all([worker(), worker(), worker(), worker()]).then(() => {
+          document.documentElement.dataset.pianoSamplesReady = this.samplesLoaded ? 'true' : 'false';
+        });
+      }
+      prepareSamples() {
+        this.init();
+        this.primeSamples();
+      }
+      findSample(midi, velocity) {
+        const preferredLayer = velocity < .56 ? 5 : velocity < .79 ? 10 : 15;
+        const targetAnchor = GRAND_PIANO_ANCHORS.reduce((best, anchor) => Math.abs(anchor - midi) < Math.abs(best - midi) ? anchor : best, GRAND_PIANO_ANCHORS[0]);
+        if (preferredLayer !== 10 && !this.samples.has(`${preferredLayer}:${targetAnchor}`)) this.loadSample(targetAnchor, preferredLayer);
+        const layers = GRAND_PIANO_LAYERS.slice().sort((a, b) => Math.abs(a - preferredLayer) - Math.abs(b - preferredLayer));
+        for (const layer of layers) {
+          let nearest = null;
+          let distance = Infinity;
+          for (const anchor of GRAND_PIANO_ANCHORS) {
+            if (!this.samples.has(`${layer}:${anchor}`)) continue;
+            const nextDistance = Math.abs(anchor - midi);
+            if (nextDistance < distance) { nearest = anchor; distance = nextDistance; }
+          }
+          if (nearest !== null && distance <= 4) return { anchor: nearest, buffer: this.samples.get(`${layer}:${nearest}`) };
+        }
+        return null;
+      }
+      playSample(midi, velocity) {
+        const sample = this.findSample(midi, velocity);
+        if (!sample) return false;
+        const now = this.ctx.currentTime;
+        const source = this.ctx.createBufferSource();
+        source.buffer = sample.buffer;
+        source.playbackRate.value = Math.pow(2, (midi - sample.anchor) / 12);
+        const out = this.ctx.createGain();
+        const tone = this.ctx.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 14500; tone.Q.value = .2;
+        const pan = this.ctx.createStereoPanner(); pan.pan.value = Math.max(-.55, Math.min(.55, (midi - 66) / 45));
+        out.gain.setValueAtTime(.0001, now);
+        out.gain.exponentialRampToValueAtTime(Math.max(.08, .72 * velocity), now + .005);
+        source.connect(out).connect(tone).connect(pan); pan.connect(this.dry); pan.connect(this.reverb);
+        const voice = { out, oscillators: [source], ended: false, sampled: true };
+        this.voices.set(midi, voice);
+        source.onended = () => { if (this.voices.get(midi) === voice) this.voices.delete(midi); };
+        source.start(now);
+        document.documentElement.dataset.audioVoice = String(midi);
+        document.documentElement.dataset.audioSource = 'samples';
+        return true;
+      }
+      frequency(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+      play(midi, velocity = .8) {
+        this.init(); this.release(midi, true);
+        if (this.playSample(midi, velocity)) return;
+        document.documentElement.dataset.audioSource = 'synth-fallback';
+        const now = this.ctx.currentTime, f = this.frequency(midi);
+        const naturalDecay = Math.max(3.2, 10.8 - midi * .065);
+        const out = this.ctx.createGain();
+        const tone = this.ctx.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = Math.min(12500, 2500 + f * 7); tone.Q.value = .45;
+        const pan = this.ctx.createStereoPanner(); pan.pan.value = Math.max(-.55, Math.min(.55, (midi - 66) / 45));
+        out.gain.setValueAtTime(.0001, now); out.gain.exponentialRampToValueAtTime(.52 * velocity, now + .006);
+        out.gain.exponentialRampToValueAtTime(.19 * velocity, now + .34);
+        out.gain.exponentialRampToValueAtTime(.0001, now + naturalDecay);
+        out.connect(tone).connect(pan); pan.connect(this.dry); pan.connect(this.reverb);
+        const oscillators = [];
+        const partials = f < 130 ? [1,2,3,4,5,6,8,10] : f < 600 ? [1,2,3,4,5,7,9] : [1,2,3,4,6];
+        const weights = [1,.41,.205,.108,.061,.034,.019,.011];
+        const stringCount = midi < 40 ? 1 : midi < 52 ? 2 : 3;
+        const stringSpread = midi > 84 ? 1.45 : 1.05;
+        partials.forEach((p, i) => {
+          if (f * p >= this.ctx.sampleRate * .46) return;
+          const strings = i === 0 ? stringCount : 1;
+          for (let s = 0; s < strings; s++) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = i === 0 ? 'triangle' : 'sine';
+            const inharmonicity = midi < 45 ? .00031 : .00014;
+            const stretch = Math.sqrt(1 + inharmonicity * p * p);
+            osc.frequency.value = f * p * stretch;
+            osc.detune.value = strings === 1 ? (i % 2 ? .45 : -.45) : (s - (strings - 1) / 2) * stringSpread;
+            gain.gain.value = weights[i] / Math.sqrt(strings) * (1 - Math.min(.28, f / 9500));
+            osc.connect(gain).connect(out); osc.start(now); osc.stop(now + naturalDecay + 1.2);
+            oscillators.push(osc);
+          }
+        });
+        const noiseLength = Math.floor(this.ctx.sampleRate * .055);
+        const buffer = this.ctx.createBuffer(1, noiseLength, this.ctx.sampleRate);
+        const d = buffer.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+        const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+        const hammer = this.ctx.createBiquadFilter(); hammer.type = 'bandpass'; hammer.frequency.value = Math.min(6500, 900 + f * 3.8); hammer.Q.value = .8;
+        const hammerGain = this.ctx.createGain(); hammerGain.gain.value = (.10 + .13 * velocity) * velocity;
+        noise.connect(hammer).connect(hammerGain).connect(out); noise.start(now);
+        this.voices.set(midi, { out, oscillators, ended: false });
+        document.documentElement.dataset.audioVoice = String(midi);
+      }
+      release(midi, immediate = false, ignorePedal = false) {
+        const voice = this.voices.get(midi); if (!voice || voice.ended) return;
+        if (this.pedal && !immediate && !ignorePedal) { this.sustained.add(midi); return; }
+        const now = this.ctx.currentTime; voice.ended = true;
+        voice.out.gain.cancelScheduledValues(now); voice.out.gain.setTargetAtTime(.0001, now, immediate ? .01 : .18);
+        setTimeout(() => { try { voice.oscillators.forEach(o => o.stop()); } catch {} this.voices.delete(midi); }, immediate ? 80 : 1200);
+        this.sustained.delete(midi);
+      }
+      setPedal(on) {
+        this.pedal = on;
+        if (!on) { [...this.sustained].forEach(m => this.release(m)); this.sustained.clear(); }
+      }
+      setVolume(v) {
+        this.volume = Math.max(0, Math.min(100, Number(v) || 0));
+        if (this.ctx) this.master.gain.setTargetAtTime(Math.pow(this.volume / 100, 1.6) * .66, this.ctx.currentTime, .03);
+        schedulePreferencesSave();
+      }
+    }
+
+    const piano = new PianoEngine();
+    window.setTimeout(() => { try { piano.prepareSamples(); } catch {} }, 0);
+    document.addEventListener('pointerdown', () => piano.unlock(), { once: true, capture: true });
+    document.addEventListener('touchstart', () => piano.unlock(), { once: true, capture: true, passive: true });
+    const activePointers = new Map();
+    const keyPointers = new Map();
+    const touchPoints = new Map();
+    const storedWhiteWidth = Number(savedPreferences.keyboard?.whiteWidth);
+    const storedViewPosition = Number(savedPreferences.keyboard?.position);
+    const savedViewPosition = Number.isFinite(storedViewPosition) ? Math.max(0, Math.min(1, storedViewPosition)) : null;
+    let lastKnownViewPosition = savedViewPosition ?? .5;
+    let pinch = null, pinchCandidate = null, viewOffset = 0, whiteWidth = Number.isFinite(storedWhiteWidth) ? Math.max(28, Math.min(86, storedWhiteWidth)) : Math.max(30, Math.min(54, window.innerWidth / 10));
+
+    function keyAt(x, y) {
+      const el = document.elementFromPoint(x, y);
+      return el && el.closest ? el.closest('.key') : null;
+    }
+    function activate(pointerId, key, velocity = .82) {
+      if (!key || activePointers.get(pointerId) === key) return;
+      deactivate(pointerId);
+      activePointers.set(pointerId, key);
+      let pointers = keyPointers.get(key);
+      if (!pointers) { pointers = new Set(); keyPointers.set(key, pointers); }
+      pointers.add(pointerId); key.classList.add('active');
+      if (pointers.size === 1) piano.play(Number(key.dataset.midi), velocity);
+    }
+    function deactivate(pointerId) {
+      const key = activePointers.get(pointerId); if (!key) return;
+      const pointers = keyPointers.get(key);
+      if (pointers) pointers.delete(pointerId);
+      if (!pointers || pointers.size === 0) {
+        key.classList.remove('active'); piano.release(Number(key.dataset.midi)); keyPointers.delete(key);
+      }
+      activePointers.delete(pointerId);
+    }
+    function stopAllPointers() { [...activePointers.keys()].forEach(deactivate); }
+    function miniKeyAt(x, y) {
+      const el = document.elementFromPoint(x, y);
+      const key = el && el.closest ? el.closest('.mini-key') : null;
+      return key && toneMiniPiano.contains(key) ? key : null;
+    }
+    toneMiniPiano.addEventListener('pointerdown', event => {
+      const key = event.target.closest('.mini-key');
+      if (!key) return;
+      event.preventDefault();
+      toneMiniPiano.setPointerCapture(event.pointerId);
+      activate(event.pointerId, key);
+      handleToneTrainingGuess(Number(key.dataset.midi) % 12);
+    });
+    toneMiniPiano.addEventListener('pointermove', event => {
+      if (!activePointers.has(event.pointerId) || !toneMiniPiano.hasPointerCapture(event.pointerId)) return;
+      activate(event.pointerId, miniKeyAt(event.clientX, event.clientY));
+    });
+    function endMiniPianoPointer(event) {
+      if (!activePointers.has(event.pointerId)) return;
+      deactivate(event.pointerId);
+      if (toneMiniPiano.hasPointerCapture(event.pointerId)) toneMiniPiano.releasePointerCapture(event.pointerId);
+    }
+    toneMiniPiano.addEventListener('pointerup', endMiniPianoPointer);
+    toneMiniPiano.addEventListener('pointercancel', endMiniPianoPointer);
+    toneMiniPiano.addEventListener('lostpointercapture', endMiniPianoPointer);
+    toneMiniPiano.addEventListener('click', event => {
+      if (event.detail !== 0) return;
+      const key = event.target.closest('.mini-key');
+      if (key) handleToneTrainingGuess(Number(key.dataset.midi) % 12);
+    });
+    function pinchDistance() { const p = [...touchPoints.values()]; return p.length < 2 ? 0 : Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); }
+    function pinchCenter() { const p = [...touchPoints.values()]; return { x:(p[0].x+p[1].x)/2, y:(p[0].y+p[1].y)/2 }; }
+    function setWhiteWidth(next, anchorX = scroller.clientWidth / 2, contentAnchor = null) {
+      const old = whiteWidth; whiteWidth = Math.max(28, Math.min(86, next));
+      const before = contentAnchor ?? (viewOffset + anchorX) / old;
+      keyboard.style.setProperty('--white-key', `${whiteWidth}px`);
+      keyboard.style.width = `${whiteIndex * whiteWidth}px`;
+      keyboard.style.minWidth = `${whiteIndex * whiteWidth}px`;
+      keyboard.querySelectorAll('.key').forEach(key => {
+        key.style.left = `${Number(key.dataset.whiteIndex) * whiteWidth}px`;
+        key.style.width = `${whiteWidth * (key.classList.contains('black') ? .63 : 1)}px`;
+      });
+      zoomStatus.textContent = `${Math.round(whiteWidth / 54 * 100)}%`;
+      setViewOffset(before * whiteWidth - anchorX);
+    }
+    function maxScroll() {
+      const style = getComputedStyle(scroller);
+      const visibleWidth = scroller.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      return Math.max(0, keyboard.offsetWidth - visibleWidth);
+    }
+    function setViewOffset(next) {
+      viewOffset = Math.max(0, Math.min(maxScroll(), Number(next) || 0));
+      keyboard.style.transform = `translate3d(${-viewOffset}px,0,0)`;
+      updateNavigator();
+      const max = maxScroll();
+      if (max > 0) lastKnownViewPosition = viewOffset / max;
+      schedulePreferencesSave();
+    }
+    function updateNavigator() {
+      const max = maxScroll();
+      const ratio = max ? viewOffset / max : .5;
+      const percent = Math.round(ratio * 100);
+      scrollThumb.style.left = `${ratio * 100}%`;
+      scrollFill.style.width = `${ratio * 100}%`;
+      rangeNavigator.classList.toggle('disabled', max < 1);
+      rangeNavigator.setAttribute('aria-disabled', max < 1 ? 'true' : 'false');
+      rangeNavigator.setAttribute('aria-valuenow', percent);
+    }
+
+    scroller.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'touch') {
+        touchPoints.set(e.pointerId, {x:e.clientX,y:e.clientY});
+        if (touchPoints.size === 2) {
+          const c = pinchCenter();
+          const localX = c.x - scroller.getBoundingClientRect().left;
+          pinchCandidate = { distance: pinchDistance(), width: whiteWidth, content: (viewOffset + localX) / whiteWidth };
+        } else if (touchPoints.size > 2) pinchCandidate = null;
+      }
+      scroller.setPointerCapture(e.pointerId);
+      activate(e.pointerId, keyAt(e.clientX, e.clientY), Math.max(.45, Math.min(1, .55 + (1 - e.clientY / window.innerHeight) * .45)));
+      e.preventDefault();
+    });
+    scroller.addEventListener('pointermove', e => {
+      if (e.pointerType === 'touch' && touchPoints.has(e.pointerId)) touchPoints.set(e.pointerId, {x:e.clientX,y:e.clientY});
+      if (!pinch && pinchCandidate && touchPoints.size === 2) {
+        const distance = pinchDistance();
+        if (Math.abs(distance - pinchCandidate.distance) > Math.max(18, pinchCandidate.distance * .08)) {
+          stopAllPointers(); pinch = pinchCandidate;
+        }
+      }
+      if (pinch && touchPoints.size === 2) {
+        const c = pinchCenter();
+        const localX = c.x - scroller.getBoundingClientRect().left;
+        setWhiteWidth(pinch.width * pinchDistance() / pinch.distance, localX, pinch.content); e.preventDefault(); return;
+      }
+      if (activePointers.has(e.pointerId) && (e.pointerType === 'touch' || e.buttons !== 0)) activate(e.pointerId, keyAt(e.clientX, e.clientY));
+    });
+    function pointerEnd(e) {
+      deactivate(e.pointerId); touchPoints.delete(e.pointerId);
+      if (touchPoints.size < 2) { pinch = null; pinchCandidate = null; }
+      else if (touchPoints.size === 2 && !pinch) {
+        const c = pinchCenter();
+        const localX = c.x - scroller.getBoundingClientRect().left;
+        pinchCandidate = { distance: pinchDistance(), width: whiteWidth, content: (viewOffset + localX) / whiteWidth };
+      }
+    }
+    scroller.addEventListener('pointerup', pointerEnd);
+    scroller.addEventListener('pointercancel', pointerEnd);
+    scroller.addEventListener('contextmenu', e => e.preventDefault());
+    function moveFromSliderPointer(e) {
+      const rect = rangeNavigator.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      setViewOffset(maxScroll() * ratio);
+    }
+    let sliderPointer = null;
+    rangeNavigator.addEventListener('pointerdown', e => {
+      sliderPointer = e.pointerId;
+      try { rangeNavigator.setPointerCapture(e.pointerId); } catch {}
+      moveFromSliderPointer(e); e.preventDefault();
+    });
+    rangeNavigator.addEventListener('pointermove', e => {
+      if (sliderPointer !== e.pointerId) return;
+      moveFromSliderPointer(e); e.preventDefault();
+    });
+    const stopSlider = e => { if (sliderPointer === e.pointerId) sliderPointer = null; };
+    rangeNavigator.addEventListener('pointerup', stopSlider);
+    rangeNavigator.addEventListener('pointercancel', stopSlider);
+    rangeNavigator.addEventListener('lostpointercapture', stopSlider);
+    rangeNavigator.addEventListener('keydown', e => {
+      const step = Math.max(48, whiteWidth * 1.5);
+      if (e.key === 'ArrowLeft') { setViewOffset(viewOffset - step); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { setViewOffset(viewOffset + step); e.preventDefault(); }
+      if (e.key === 'Home') { setViewOffset(0); e.preventDefault(); }
+      if (e.key === 'End') { setViewOffset(maxScroll()); e.preventDefault(); }
+    });
+
+    const cancelPanHolds = [];
+    function bindPanButton(id, direction) {
+      const button = document.getElementById(id);
+      let frame = 0, heldFrom = 0, previous = 0, pointerId = null;
+      const animate = now => {
+        if (pointerId === null) return;
+        if (now - heldFrom > 220) setViewOffset(viewOffset + direction * Math.max(1, (now - previous) * .62));
+        previous = now; frame = requestAnimationFrame(animate);
+      };
+      const cancelHold = () => {
+        pointerId = null;
+        cancelAnimationFrame(frame);
+        frame = 0;
+      };
+      cancelPanHolds.push(cancelHold);
+      button.addEventListener('pointerdown', e => {
+        pointerId = e.pointerId; button.setPointerCapture(e.pointerId);
+        setViewOffset(viewOffset + direction * Math.max(64, whiteWidth * 2.2));
+        heldFrom = previous = performance.now();
+        cancelAnimationFrame(frame); frame = requestAnimationFrame(animate); e.preventDefault();
+      });
+      const stop = e => {
+        if (pointerId !== e.pointerId) return;
+        cancelHold();
+      };
+      button.addEventListener('pointerup', stop);
+      button.addEventListener('pointercancel', stop);
+      button.addEventListener('lostpointercapture', stop);
+    }
+    bindPanButton('panLeft', -1);
+    bindPanButton('panRight', 1);
+
+    let panelDrag = null;
+    fallboard.addEventListener('pointerdown', e => {
+      fallboard.setPointerCapture(e.pointerId);
+      panelDrag = { id: e.pointerId, x: e.clientX, offset: viewOffset };
+      fallboard.classList.add('dragging'); e.preventDefault();
+    });
+    fallboard.addEventListener('pointermove', e => {
+      if (!panelDrag || panelDrag.id !== e.pointerId) return;
+      setViewOffset(panelDrag.offset - (e.clientX - panelDrag.x)); e.preventDefault();
+    });
+    function endPanelDrag(e) {
+      if (!panelDrag || panelDrag.id !== e.pointerId) return;
+      panelDrag = null; fallboard.classList.remove('dragging');
+    }
+    fallboard.addEventListener('pointerup', endPanelDrag);
+    fallboard.addEventListener('pointercancel', endPanelDrag);
+
+    function cancelTransientInteractions() {
+      stopAllPointers();
+      touchPoints.clear();
+      pinch = null;
+      pinchCandidate = null;
+      sliderPointer = null;
+      panelDrag = null;
+      fallboard.classList.remove('dragging');
+      cancelPanHolds.forEach(cancel => cancel());
+    }
+
+    let viewportSettleTimer = 0;
+    let viewportFrame = 0;
+    function handleViewportChange() {
+      cancelTransientInteractions();
+      cancelAnimationFrame(viewportFrame);
+      clearTimeout(viewportSettleTimer);
+      viewportFrame = requestAnimationFrame(updateNavigator);
+      viewportSettleTimer = window.setTimeout(() => {
+        viewportFrame = 0;
+        setViewOffset(maxScroll() * lastKnownViewPosition);
+      }, 180);
+    }
+
+    function navigateTo(screen) {
+      const nextHash = `#${screen}`;
+      if (location.hash === nextHash) renderAppScreen();
+      else location.hash = screen;
+    }
+    function syncToneTrainingControls() {
+      const soundMode = toneTrainingSettingsForm.querySelector(`input[name="toneSoundMode"][value="${toneTrainingConfig.soundMode}"]`);
+      if (soundMode) soundMode.checked = true;
+      const selected = new Set(toneTrainingConfig.tonalities);
+      trainingTonalityFields.querySelectorAll('input[name="trainingTonality"]').forEach(input => {
+        input.checked = selected.has(input.value);
+      });
+      trainingTonalityError.hidden = true;
+      trainingTonalityError.textContent = '';
+    }
+    function renderDegreeTrainingKeyOptions(preferred = degreeTrainingConfig.keyChoice) {
+      const mode = degreeTrainingMode.value;
+      const options = TONALITY_OPTIONS.filter(option => option.mode === mode);
+      degreeTrainingKeyChoice.replaceChildren();
+      const randomOption = document.createElement('option');
+      randomOption.value = 'random';
+      randomOption.textContent = 'Случайно';
+      degreeTrainingKeyChoice.append(randomOption);
+      options.forEach(option => {
+        const node = document.createElement('option');
+        node.value = option.value;
+        node.textContent = option.label;
+        degreeTrainingKeyChoice.append(node);
+      });
+      degreeTrainingKeyChoice.value = options.some(option => option.value === preferred) ? preferred : 'random';
+    }
+    function syncDegreeTrainingControls() {
+      degreeTrainingMode.value = degreeTrainingConfig.mode;
+      renderDegreeTrainingKeyOptions(degreeTrainingConfig.keyChoice);
+    }
+    function renderAppScreen() {
+      const screen = location.hash.slice(1);
+      const showImprovisation = screen === 'improvisation';
+      const showEarTraining = screen === 'ear-training';
+      const showToneTraining = screen === 'tone-training';
+      const showDegreeTraining = screen === 'degree-training';
+      const wasShowingImprovisation = !pianoApp.hidden;
+      const wasShowingToneTraining = !toneTrainingScreen.hidden;
+      const wasShowingDegreeTraining = !degreeTrainingScreen.hidden;
+      homeScreen.hidden = showImprovisation || showEarTraining || showToneTraining || showDegreeTraining;
+      earTrainingScreen.hidden = !showEarTraining;
+      toneTrainingScreen.hidden = !showToneTraining;
+      degreeTrainingScreen.hidden = !showDegreeTraining;
+      pianoApp.hidden = !showImprovisation;
+      if (wasShowingImprovisation && !showImprovisation) {
+        if (improvSettings.open) improvSettings.close('cancel');
+        setImprovExpanded(false);
+        stopImprov();
+        cancelTransientInteractions();
+      }
+      if (wasShowingToneTraining && !showToneTraining) {
+        if (toneTrainingSettings.open) toneTrainingSettings.close('cancel');
+        if (toneTrainingStats.open) toneTrainingStats.close('cancel');
+        stopToneTrainingSession(true);
+      }
+      if (wasShowingDegreeTraining && !showDegreeTraining) {
+        if (degreeTrainingSettings.open) degreeTrainingSettings.close('cancel');
+        if (degreeTrainingStats.open) degreeTrainingStats.close('cancel');
+        stopDegreeTrainingSession(true);
+      }
+      if (showImprovisation) {
+        requestAnimationFrame(() => {
+          setWhiteWidth(whiteWidth);
+          if (!improvisationOpened) {
+            if (savedViewPosition !== null) setViewOffset(maxScroll() * savedViewPosition);
+            else {
+              const middleC = 23 * whiteWidth;
+              setViewOffset(middleC - scroller.clientWidth * .32);
+            }
+            improvisationOpened = true;
+          } else {
+            setViewOffset(viewOffset);
+          }
+        });
+      }
+    }
+    openImprovisation.addEventListener('click', () => navigateTo('improvisation'));
+    openEarTraining.addEventListener('click', () => navigateTo('ear-training'));
+    openToneTraining.addEventListener('click', () => navigateTo('tone-training'));
+    openDegreeTraining.addEventListener('click', () => navigateTo('degree-training'));
+    earTrainingBack.addEventListener('click', () => navigateTo('home'));
+    toneTrainingBack.addEventListener('click', () => navigateTo('ear-training'));
+    toneTrainingHome.addEventListener('click', () => navigateTo('home'));
+    degreeTrainingBack.addEventListener('click', () => navigateTo('ear-training'));
+    degreeTrainingHome.addEventListener('click', () => navigateTo('home'));
+    toneTrainingStartButton.addEventListener('click', startToneTrainingSession);
+    toneTrainingRepeat.addEventListener('click', () => {
+      if (toneTrainingState.active && toneTrainingState.currentTonality) playToneTrainingSequence();
+    });
+    function clearToneTrainingResultsView() {
+      toneTrainingSession.hidden = true;
+      toneTrainingRepeat.disabled = true;
+      toneTrainingStartButton.textContent = 'Начать тренировку';
+      toneTrainingResultCells.forEach((cell, index) => {
+        cell.textContent = '';
+        cell.className = '';
+        cell.setAttribute('aria-label', `Задание ${index + 1}`);
+      });
+    }
+    function closeToneTrainingStats(returnValue = 'done') {
+      if (toneTrainingStats.open) toneTrainingStats.close(returnValue);
+    }
+    toneTrainingStatsClose.addEventListener('click', closeToneTrainingStats);
+    toneTrainingStatsDone.addEventListener('click', closeToneTrainingStats);
+    toneTrainingRestart.addEventListener('click', () => {
+      closeToneTrainingStats('restart');
+      startToneTrainingSession();
+    });
+    toneTrainingStats.addEventListener('click', event => {
+      if (event.target === toneTrainingStats) closeToneTrainingStats();
+    });
+    toneTrainingStats.addEventListener('close', () => {
+      if (toneTrainingStats.returnValue !== 'restart') clearToneTrainingResultsView();
+    });
+    toneTrainingSettingsButton.addEventListener('click', () => {
+      syncToneTrainingControls();
+      toneTrainingSettings.showModal();
+    });
+    toneTrainingSettingsClose.addEventListener('click', () => toneTrainingSettings.close('cancel'));
+    function setAllTrainingTonalities(checked) {
+      trainingTonalityFields.querySelectorAll('input[name="trainingTonality"]').forEach(input => {
+        input.checked = checked;
+      });
+      if (checked) {
+        trainingTonalityError.hidden = true;
+        trainingTonalityError.textContent = '';
+      }
+    }
+    selectAllTrainingTonalities.addEventListener('click', () => setAllTrainingTonalities(true));
+    clearTrainingTonalities.addEventListener('click', () => setAllTrainingTonalities(false));
+    trainingTonalityFields.addEventListener('change', () => {
+      if (trainingTonalityFields.querySelector('input[name="trainingTonality"]:checked')) {
+        trainingTonalityError.hidden = true;
+        trainingTonalityError.textContent = '';
+      }
+    });
+    toneTrainingSettings.addEventListener('click', event => {
+      if (event.target === toneTrainingSettings) toneTrainingSettings.close('cancel');
+    });
+    toneTrainingSettingsForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const tonalities = Array.from(trainingTonalityFields.querySelectorAll('input[name="trainingTonality"]:checked')).map(input => input.value);
+      if (!tonalities.length) {
+        trainingTonalityError.textContent = 'Выберите хотя бы одну тональность.';
+        trainingTonalityError.hidden = false;
+        return;
+      }
+      toneTrainingConfig = {
+        soundMode: toneTrainingSettingsForm.querySelector('input[name="toneSoundMode"]:checked').value,
+        tonalities
+      };
+      stopToneTrainingSession(true);
+      saveUserPreferences();
+      toneTrainingSettings.close('saved');
+    });
+    degreeTrainingSettingsButton.addEventListener('click', () => {
+      syncDegreeTrainingControls();
+      degreeTrainingSettings.showModal();
+    });
+    degreeTrainingSettingsClose.addEventListener('click', () => degreeTrainingSettings.close('cancel'));
+    degreeTrainingSettings.addEventListener('click', event => {
+      if (event.target === degreeTrainingSettings) degreeTrainingSettings.close('cancel');
+    });
+    degreeTrainingMode.addEventListener('change', () => renderDegreeTrainingKeyOptions('random'));
+    degreeTrainingSettingsForm.addEventListener('submit', event => {
+      event.preventDefault();
+      degreeTrainingConfig = { mode: degreeTrainingMode.value, keyChoice: degreeTrainingKeyChoice.value };
+      stopDegreeTrainingSession(true);
+      degreeTrainingKey.textContent = degreeTrainingConfig.keyChoice === 'random' ? '—' : degreeTrainingConfig.keyChoice;
+      degreeTrainingKey.disabled = degreeTrainingConfig.keyChoice === 'random';
+      saveUserPreferences();
+      degreeTrainingSettings.close('saved');
+    });
+    function clearDegreeTrainingPlayback() {
+      degreeTrainingTimers.forEach(timer => clearTimeout(timer));
+      degreeTrainingTimers = [];
+      degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
+      degreeTrainingChordNotes = [];
+    }
+    function clearDegreeTrainingHint() {
+      degreeButtons.forEach(button => button.classList.remove('correct-answer'));
+    }
+    function chooseDegreeTrainingTonality() {
+      if (degreeTrainingConfig.keyChoice !== 'random') return degreeTrainingConfig.keyChoice;
+      const choices = TONALITY_OPTIONS
+        .filter(option => option.mode === degreeTrainingConfig.mode)
+        .map(option => option.value)
+        .filter(value => value !== degreeTrainingState.lastTonality);
+      const selected = choices[Math.floor(Math.random() * choices.length)];
+      degreeTrainingState.lastTonality = selected;
+      return selected;
+    }
+    function chooseDegreeTrainingDegree() {
+      const choices = DEGREES.filter(value => value !== degreeTrainingState.lastDegree);
+      const selected = choices[Math.floor(Math.random() * choices.length)];
+      degreeTrainingState.lastDegree = selected;
+      return selected;
+    }
+    function playDegreeTrainingChord() {
+      if (!degreeTrainingState.active || !degreeTrainingState.currentTonality || !degreeTrainingState.currentDegree) return;
+      clearDegreeTrainingPlayback();
+      clearDegreeTrainingHint();
+      degreeTrainingState.acceptingAnswer = false;
+      degreeTrainingRepeat.disabled = true;
+      const chord = chordFor(degreeTrainingState.currentTonality, degreeTrainingState.currentDegree);
+      if (!chord) return;
+      piano.unlock();
+      degreeTrainingChordNotes = chord.notes.slice();
+      degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
+      degreeTrainingTimers.push(window.setTimeout(() => {
+        degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
+        degreeTrainingChordNotes = [];
+        if (!degreeTrainingState.active) return;
+        degreeTrainingState.acceptingAnswer = true;
+        degreeTrainingRepeat.disabled = false;
+      }, 1500));
+    }
+    function playDegreeTrainingTonic() {
+      const tonality = degreeTrainingState.currentTonality || (degreeTrainingConfig.keyChoice !== 'random' ? degreeTrainingConfig.keyChoice : null);
+      if (!tonality) return;
+      clearDegreeTrainingPlayback();
+      const shouldResumeAnswers = degreeTrainingState.active;
+      if (shouldResumeAnswers) degreeTrainingState.acceptingAnswer = false;
+      degreeTrainingRepeat.disabled = true;
+      const chord = chordFor(tonality, 'I');
+      if (!chord) return;
+      piano.unlock();
+      degreeTrainingChordNotes = chord.notes.slice();
+      degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
+      degreeTrainingTimers.push(window.setTimeout(() => {
+        degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
+        degreeTrainingChordNotes = [];
+        if (!degreeTrainingState.active) return;
+        degreeTrainingState.acceptingAnswer = true;
+        degreeTrainingRepeat.disabled = false;
+      }, 1500));
+    }
+    function playDegreeTrainingChoice(degree) {
+      if (!degreeTrainingState.active || !degreeTrainingState.currentTonality) return;
+      clearDegreeTrainingPlayback();
+      degreeTrainingState.acceptingAnswer = false;
+      degreeTrainingRepeat.disabled = true;
+      const chord = chordFor(degreeTrainingState.currentTonality, degree);
+      if (!chord) return;
+      piano.unlock();
+      degreeTrainingChordNotes = chord.notes.slice();
+      degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
+      degreeTrainingTimers.push(window.setTimeout(() => {
+        degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
+        degreeTrainingChordNotes = [];
+        if (!degreeTrainingState.active) return;
+        degreeTrainingState.acceptingAnswer = true;
+        degreeTrainingRepeat.disabled = false;
+      }, 1500));
+    }
+    function beginDegreeTrainingQuestion() {
+      clearDegreeTrainingHint();
+      degreeTrainingState.hadError = false;
+      degreeTrainingState.currentTonality = chooseDegreeTrainingTonality();
+      if (degreeTrainingState.index === 0) {
+        degreeTrainingState.currentDegree = 'I';
+        degreeTrainingState.lastDegree = 'I';
+      } else {
+        degreeTrainingState.currentDegree = chooseDegreeTrainingDegree();
+      }
+      degreeTrainingKey.textContent = degreeTrainingState.currentTonality;
+      degreeTrainingKey.disabled = false;
+      playDegreeTrainingChord();
+    }
+    function clearDegreeTrainingResultsView() {
+      degreeTrainingSession.hidden = true;
+      degreeTrainingRepeat.disabled = true;
+      degreeTrainingStartButton.textContent = 'Начать тренировку';
+      degreeTrainingKey.textContent = degreeTrainingConfig.keyChoice === 'random' ? '—' : degreeTrainingConfig.keyChoice;
+      degreeTrainingKey.disabled = degreeTrainingConfig.keyChoice === 'random';
+      degreeTrainingResultCells.forEach((cell, index) => {
+        cell.textContent = '';
+        cell.className = '';
+        cell.setAttribute('aria-label', `Задание ${index + 1}`);
+      });
+      clearDegreeTrainingHint();
+    }
+    function startDegreeTrainingSession() {
+      clearDegreeTrainingPlayback();
+      clearDegreeTrainingHint();
+      if (degreeTrainingStats.open) degreeTrainingStats.close('restart');
+      degreeTrainingState = { active: true, index: 0, currentTonality: null, currentDegree: null, hadError: false, acceptingAnswer: false, lastTonality: null, lastDegree: null };
+      degreeTrainingResultCells.forEach((cell, index) => {
+        cell.textContent = '';
+        cell.className = '';
+        cell.setAttribute('aria-label', `Задание ${index + 1}`);
+      });
+      degreeTrainingSession.hidden = false;
+      degreeTrainingRepeat.disabled = true;
+      degreeTrainingStartButton.textContent = 'Начать заново';
+      beginDegreeTrainingQuestion();
+    }
+    function renderDegreeTrainingStats(correctCount) {
+      const errorsCount = degreeTrainingResultCells.length - correctCount;
+      degreeTrainingCorrect.textContent = `${correctCount} / ${degreeTrainingResultCells.length}`;
+      degreeTrainingErrors.textContent = String(errorsCount);
+      degreeTrainingHistoryChart.replaceChildren();
+      degreeTrainingHistory.forEach((entry, index) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'tone-history-bar-wrap';
+        const area = document.createElement('div');
+        area.className = 'tone-history-bar-area';
+        const bar = document.createElement('div');
+        bar.className = 'tone-history-bar';
+        bar.style.height = `${Math.max(4, entry.correct * 12.2)}px`;
+        bar.dataset.value = String(entry.correct);
+        bar.setAttribute('aria-label', `Тренировка ${index + 1}: ${entry.correct} правильных ответов`);
+        const label = document.createElement('span');
+        label.className = 'tone-history-index';
+        label.textContent = String(index + 1);
+        area.append(bar);
+        wrap.append(area, label);
+        degreeTrainingHistoryChart.append(wrap);
+      });
+      degreeTrainingHistoryChart.setAttribute('aria-label', `Последние результаты: ${degreeTrainingHistory.map(entry => entry.correct).join(', ')}`);
+      degreeTrainingStats.showModal();
+    }
+    function finishDegreeTrainingSession() {
+      clearDegreeTrainingPlayback();
+      degreeTrainingState.active = false;
+      degreeTrainingState.acceptingAnswer = false;
+      degreeTrainingRepeat.disabled = true;
+      degreeTrainingStartButton.textContent = 'Начать заново';
+      const correctCount = degreeTrainingResultCells.filter(cell => cell.classList.contains('correct')).length;
+      degreeTrainingHistory = [...degreeTrainingHistory, { correct: correctCount, errors: degreeTrainingResultCells.length - correctCount }].slice(-10);
+      saveUserPreferences();
+      renderDegreeTrainingStats(correctCount);
+    }
+    function stopDegreeTrainingSession(resetView = false) {
+      clearDegreeTrainingPlayback();
+      clearDegreeTrainingHint();
+      degreeTrainingState.active = false;
+      degreeTrainingState.acceptingAnswer = false;
+      if (resetView) clearDegreeTrainingResultsView();
+    }
+    function handleDegreeTrainingGuess(degree) {
+      if (!degreeTrainingState.active || !degreeTrainingState.acceptingAnswer) return;
+      const cell = degreeTrainingResultCells[degreeTrainingState.index];
+      if (degree !== degreeTrainingState.currentDegree) {
+        degreeTrainingState.hadError = true;
+        const answer = degreeButtons.find(button => button.dataset.degree === degreeTrainingState.currentDegree);
+        if (answer) answer.classList.add('correct-answer');
+        playDegreeTrainingChoice(degree);
+        return;
+      }
+      degreeTrainingState.acceptingAnswer = false;
+      clearDegreeTrainingHint();
+      if (cell) {
+        cell.textContent = degreeTrainingState.hadError ? '×' : '✓';
+        cell.className = degreeTrainingState.hadError ? 'wrong' : 'correct';
+        cell.setAttribute('aria-label', `Задание ${degreeTrainingState.index + 1}: ${degreeTrainingState.hadError ? 'неверно, затем правильно' : 'правильно'}`);
+      }
+      degreeTrainingState.index += 1;
+      if (degreeTrainingState.index >= degreeTrainingResultCells.length) {
+        finishDegreeTrainingSession();
+        return;
+      }
+      degreeTrainingTimers.push(window.setTimeout(beginDegreeTrainingQuestion, 500));
+    }
+    degreeTrainingStartButton.addEventListener('click', startDegreeTrainingSession);
+    degreeTrainingRepeat.addEventListener('click', playDegreeTrainingChord);
+    degreeTrainingKey.addEventListener('click', playDegreeTrainingTonic);
+    degreeTrainingButtons.addEventListener('click', event => {
+      const button = event.target.closest('[data-degree]');
+      if (button) handleDegreeTrainingGuess(button.dataset.degree);
+    });
+    function closeDegreeTrainingStats(returnValue = 'done') {
+      if (degreeTrainingStats.open) degreeTrainingStats.close(returnValue);
+    }
+    degreeTrainingStatsClose.addEventListener('click', () => closeDegreeTrainingStats());
+    degreeTrainingStatsDone.addEventListener('click', () => closeDegreeTrainingStats());
+    degreeTrainingRestart.addEventListener('click', () => {
+      closeDegreeTrainingStats('restart');
+      startDegreeTrainingSession();
+    });
+    degreeTrainingStats.addEventListener('click', event => {
+      if (event.target === degreeTrainingStats) closeDegreeTrainingStats();
+    });
+    degreeTrainingStats.addEventListener('close', () => {
+      if (degreeTrainingStats.returnValue !== 'restart') clearDegreeTrainingResultsView();
+    });
+    improvHome.addEventListener('click', () => navigateTo('home'));
+    window.addEventListener('hashchange', renderAppScreen);
+
+    sustainButton.addEventListener('click', () => {
+      const on = sustainButton.getAttribute('aria-pressed') !== 'true';
+      sustainButton.setAttribute('aria-pressed', on); sustainButton.classList.toggle('active', on); piano.setPedal(on);
+      schedulePreferencesSave();
+    });
+    document.getElementById('zoomIn').addEventListener('click', () => setWhiteWidth(whiteWidth * 1.14));
+    document.getElementById('zoomOut').addEventListener('click', () => setWhiteWidth(whiteWidth / 1.14));
+    function setImprovState(state) {
+      improvState = state;
+      const playing = state === 'playing';
+      improvToggle.setAttribute('aria-pressed', String(playing));
+      improvToggle.setAttribute('aria-label', playing ? 'Поставить импровизацию на паузу' : state === 'paused' ? 'Продолжить импровизацию' : 'Запустить импровизацию');
+      improvPanel.dataset.state = state;
+    }
+    function degreeIndex(degree) { return DEGREES.indexOf(degree); }
+    function chordFor(tonality, degree) {
+      const key = TONALITY_DATA[tonality];
+      const index = degreeIndex(degree);
+      if (!key || index < 0) return null;
+      const quality = (key.minor ? ['m','°','','m','','',''] : ['','m','m','','','m','°'])[index];
+      const pitchOffsets = key.minor ? MINOR_FUNCTION_CHORDS[index] : [0, 2, 4].map(offset => MAJOR_INTERVALS[(index + offset) % 7]);
+      const toneNames = key.minor
+        ? MINOR_FUNCTION_NAMES[index].map(ref => ref === 'leading' ? key.leading : key.notes[ref])
+        : [0, 2, 4].map(offset => key.notes[(index + offset) % 7]);
+      const tones = pitchOffsets
+        .map((offset, toneIndex) => ({ midi: 48 + ((key.root + offset) % 12), name: toneNames[toneIndex] }))
+        .sort((a, b) => a.midi - b.midi);
+      const rootName = key.notes[index];
+      const rootMidi = 48 + ((key.root + pitchOffsets[0]) % 12);
+      return { name: `${rootName}${quality}`, notes: tones.map(tone => tone.midi), noteNames: tones.map(tone => tone.name), rootMidi };
+    }
+    function releaseToneTrainingChord() {
+      toneTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
+      toneTrainingChordNotes = [];
+    }
+    function clearToneTrainingPlayback() {
+      toneTrainingTimers.forEach(timer => clearTimeout(timer));
+      toneTrainingTimers = [];
+      releaseToneTrainingChord();
+    }
+    function clearToneTrainingHint() {
+      toneMiniPiano.querySelectorAll('.training-answer').forEach(key => key.classList.remove('training-answer'));
+    }
+    function revealToneTrainingAnswer() {
+      clearToneTrainingHint();
+      const root = TONALITY_DATA[toneTrainingState.currentTonality]?.root;
+      const key = Number.isInteger(root) ? toneMiniPiano.querySelector(`[data-midi="${60 + root}"]`) : null;
+      if (key) key.classList.add('training-answer');
+    }
+    function chooseToneTrainingTonality() {
+      const available = toneTrainingConfig.tonalities;
+      const choices = available.length > 1 ? available.filter(value => value !== toneTrainingState.lastTonality) : available;
+      const selected = choices[Math.floor(Math.random() * choices.length)];
+      toneTrainingState.lastTonality = selected;
+      return selected;
+    }
+    function playToneTrainingSequence() {
+      if (!toneTrainingState.active || !toneTrainingState.currentTonality) return;
+      clearToneTrainingPlayback();
+      clearToneTrainingHint();
+      toneTrainingState.acceptingAnswer = false;
+      toneTrainingRepeat.disabled = true;
+      piano.unlock();
+      const degrees = toneTrainingConfig.soundMode === 'all-degrees' ? DEGREES : ['I', 'IV', 'V', 'I'];
+      degrees.forEach((degree, index) => {
+        const timer = window.setTimeout(() => {
+          if (!toneTrainingState.active) return;
+          releaseToneTrainingChord();
+          const chord = chordFor(toneTrainingState.currentTonality, degree);
+          toneTrainingChordNotes = chord ? chord.notes.slice() : [];
+          toneTrainingChordNotes.forEach((midi, noteIndex) => piano.play(midi, noteIndex === 0 ? .72 : .64));
+        }, index * 2000);
+        toneTrainingTimers.push(timer);
+      });
+      toneTrainingTimers.push(window.setTimeout(() => {
+        if (!toneTrainingState.active) return;
+        releaseToneTrainingChord();
+        toneTrainingState.acceptingAnswer = true;
+        toneTrainingRepeat.disabled = false;
+      }, (degrees.length - 1) * 2000 + 1500));
+    }
+    function beginToneTrainingQuestion() {
+      clearToneTrainingHint();
+      toneTrainingState.hadError = false;
+      toneTrainingState.currentTonality = chooseToneTrainingTonality();
+      playToneTrainingSequence();
+    }
+    function startToneTrainingSession() {
+      clearToneTrainingPlayback();
+      clearToneTrainingHint();
+      closeToneTrainingStats('restart');
+      toneTrainingState = { active: true, index: 0, currentTonality: null, hadError: false, acceptingAnswer: false, lastTonality: null };
+      toneTrainingResultCells.forEach((cell, index) => {
+        cell.textContent = '';
+        cell.className = '';
+        cell.setAttribute('aria-label', `Задание ${index + 1}`);
+      });
+      toneTrainingSession.hidden = false;
+      toneTrainingRepeat.disabled = true;
+      toneTrainingStartButton.textContent = 'Начать заново';
+      beginToneTrainingQuestion();
+    }
+    function renderToneTrainingStats(correctCount) {
+      const errorsCount = toneTrainingResultCells.length - correctCount;
+      toneTrainingCorrect.textContent = `${correctCount} / ${toneTrainingResultCells.length}`;
+      toneTrainingErrors.textContent = String(errorsCount);
+      toneTrainingHistoryChart.replaceChildren();
+      toneTrainingHistory.forEach((entry, index) => {
+        const value = entry.correct;
+        const wrap = document.createElement('div');
+        wrap.className = 'tone-history-bar-wrap';
+        const area = document.createElement('div');
+        area.className = 'tone-history-bar-area';
+        const bar = document.createElement('div');
+        bar.className = 'tone-history-bar';
+        bar.style.height = `${Math.max(4, value * 12.2)}px`;
+        bar.dataset.value = String(value);
+        bar.setAttribute('aria-label', `Тренировка ${index + 1}: ${value} правильных ответов`);
+        const label = document.createElement('span');
+        label.className = 'tone-history-index';
+        label.textContent = String(index + 1);
+        area.append(bar);
+        wrap.append(area, label);
+        toneTrainingHistoryChart.append(wrap);
+      });
+      toneTrainingHistoryChart.setAttribute('aria-label', `Последние результаты: ${toneTrainingHistory.map(entry => entry.correct).join(', ')}`);
+      toneTrainingStats.showModal();
+    }
+    function finishToneTrainingSession() {
+      clearToneTrainingPlayback();
+      toneTrainingState.active = false;
+      toneTrainingState.acceptingAnswer = false;
+      toneTrainingRepeat.disabled = true;
+      toneTrainingStartButton.textContent = 'Начать заново';
+      const correctCount = toneTrainingResultCells.filter(cell => cell.classList.contains('correct')).length;
+      toneTrainingHistory = [...toneTrainingHistory, { correct: correctCount, errors: toneTrainingResultCells.length - correctCount }].slice(-10);
+      saveUserPreferences();
+      renderToneTrainingStats(correctCount);
+    }
+    function stopToneTrainingSession(resetView = false) {
+      clearToneTrainingPlayback();
+      clearToneTrainingHint();
+      toneTrainingState.active = false;
+      toneTrainingState.acceptingAnswer = false;
+      stopAllPointers();
+      if (resetView) {
+        toneTrainingSession.hidden = true;
+        toneTrainingStartButton.textContent = 'Начать тренировку';
+      }
+    }
+    function handleToneTrainingGuess(pitchClass) {
+      if (!toneTrainingState.active || !toneTrainingState.acceptingAnswer) return;
+      const root = TONALITY_DATA[toneTrainingState.currentTonality]?.root;
+      const cell = toneTrainingResultCells[toneTrainingState.index];
+      if (pitchClass !== root) {
+        toneTrainingState.hadError = true;
+        revealToneTrainingAnswer();
+        return;
+      }
+      toneTrainingState.acceptingAnswer = false;
+      clearToneTrainingHint();
+      if (cell) {
+        cell.textContent = toneTrainingState.hadError ? '×' : '✓';
+        cell.className = toneTrainingState.hadError ? 'wrong' : 'correct';
+        cell.setAttribute('aria-label', `Задание ${toneTrainingState.index + 1}: ${toneTrainingState.hadError ? 'неверно, затем правильно' : 'правильно'}`);
+      }
+      toneTrainingState.index += 1;
+      if (toneTrainingState.index >= toneTrainingResultCells.length) {
+        finishToneTrainingSession();
+        return;
+      }
+      toneTrainingTimers.push(window.setTimeout(beginToneTrainingQuestion, 500));
+    }
+    function releaseImprovChord() {
+      improvChordNotes.forEach(midi => piano.release(midi, false, true));
+      improvChordNotes = [];
+      improvPanel.dataset.playbackNotes = '';
+    }
+    function showNextImprovPosition(tonality, degrees, index, loop) {
+      const hasNext = index < degrees.length - 1 || (loop && degrees.length > 0);
+      const nextDegree = hasNext ? degrees[(index + 1) % degrees.length] : null;
+      const nextChord = nextDegree ? chordFor(tonality, nextDegree) : null;
+      improvNextDegreeDisplay.textContent = nextDegree || '—';
+      improvNextChordDisplay.textContent = nextChord ? nextChord.name : '—';
+    }
+    function showImprovPosition() {
+      if (!improvConfig) {
+        improvChordDisplay.textContent = '—';
+        improvDegreeDisplay.textContent = '—';
+        improvNextChordDisplay.textContent = '—';
+        improvNextDegreeDisplay.textContent = '—';
+        improvNotesDisplay.textContent = '—';
+        return null;
+      }
+      const degree = improvConfig.degrees[improvIndex];
+      const chord = chordFor(improvConfig.tonality, degree);
+      improvDegreeDisplay.textContent = degree;
+      improvChordDisplay.textContent = chord ? chord.name : '—';
+      showNextImprovPosition(improvConfig.tonality, improvConfig.degrees, improvIndex, improvConfig.loop);
+      improvNotesDisplay.textContent = chord ? chord.noteNames.join(' · ') : '—';
+      improvPanel.dataset.playbackIndex = String(improvIndex);
+      return chord;
+    }
+    function soundCurrentChord() {
+      releaseImprovChord();
+      const chord = showImprovPosition();
+      if (!chord || !improvSound.checked) return;
+      piano.unlock();
+      const notes = improvConfig.octaves ? [chord.rootMidi - 12, chord.rootMidi] : chord.notes.slice();
+      improvChordNotes = notes;
+      notes.forEach((midi, index) => piano.play(midi, index === 0 ? .7 : .62));
+      improvPanel.dataset.playbackNotes = notes.join(',');
+    }
+    function clearImprovTiming() {
+      clearTimeout(improvTimer);
+      improvTimer = 0;
+      improvPulseTimers.forEach(timer => clearTimeout(timer));
+      improvPulseTimers = [];
+    }
+    function pulseDelays(totalDuration, hits, elapsed = 0) {
+      const count = Math.min(4, Math.max(1, Math.round(Number(hits) || 1)));
+      const interval = totalDuration / count;
+      const delays = [];
+      for (let index = 1; index < count; index++) {
+        const delay = index * interval - elapsed;
+        if (delay > 1) delays.push(delay);
+      }
+      return delays;
+    }
+    function finishImprovStep() {
+      clearImprovTiming();
+      releaseImprovChord();
+      improvStepElapsed = 0;
+      const last = improvIndex >= improvConfig.degrees.length - 1;
+      if (last && !improvConfig.loop) { stopImprov(); return; }
+      improvIndex = last ? 0 : improvIndex + 1;
+      beginImprovStep(false);
+    }
+    function beginImprovStep(resume = false) {
+      clearImprovTiming();
+      releaseImprovChord();
+      if (!resume) improvStepElapsed = 0;
+      improvChordDuration = improvConfig.seconds * 1000;
+      improvRemaining = Math.max(0, improvChordDuration - improvStepElapsed);
+      improvChordStartedAt = performance.now();
+      setImprovState('playing');
+      soundCurrentChord();
+      pulseDelays(improvChordDuration, improvConfig.hits, improvStepElapsed).forEach(delay => {
+        if (delay < improvRemaining) improvPulseTimers.push(window.setTimeout(soundCurrentChord, delay));
+      });
+      improvTimer = window.setTimeout(finishImprovStep, improvRemaining);
+    }
+    function pauseImprov() {
+      if (improvState !== 'playing') return;
+      improvStepElapsed = Math.min(improvChordDuration, improvStepElapsed + performance.now() - improvChordStartedAt);
+      improvRemaining = Math.max(80, improvChordDuration - improvStepElapsed);
+      improvStepElapsed = Math.max(0, improvChordDuration - improvRemaining);
+      clearImprovTiming();
+      releaseImprovChord();
+      setImprovState('paused');
+    }
+    function playImprov() {
+      if (!improvConfig || !improvConfig.degrees.length) {
+        degreeError.textContent = 'Сначала задайте и сохраните все параметры импровизации.';
+        degreeError.hidden = false;
+        if (!improvSettings.open) improvSettings.showModal();
+        return;
+      }
+      beginImprovStep(improvState === 'paused' && improvRemaining > 0);
+    }
+    function stopImprov() {
+      clearImprovTiming();
+      releaseImprovChord();
+      improvIndex = 0; improvStepElapsed = 0; improvRemaining = 0;
+      setImprovState('stopped');
+      showImprovPosition();
+    }
+    improvToggle.addEventListener('click', () => { if (improvState === 'playing') pauseImprov(); else playImprov(); });
+    improvStop.addEventListener('click', stopImprov);
+    improvSound.addEventListener('change', () => {
+      improvSound.setAttribute('aria-label', improvSound.checked ? 'Звук импровизации включён' : 'Звук импровизации выключен');
+      if (!improvSound.checked) releaseImprovChord();
+      else if (improvState === 'playing') soundCurrentChord();
+      schedulePreferencesSave();
+    });
+    function setImprovExpanded(expanded) {
+      improvPanel.classList.toggle('expanded', expanded);
+      document.body.classList.toggle('improv-expanded', expanded);
+      improvExpand.setAttribute('aria-pressed', String(expanded));
+      improvExpand.setAttribute('aria-label', expanded ? 'Свернуть импровизацию' : 'Развернуть импровизацию на весь экран');
+      improvExpand.title = expanded ? 'Свернуть' : 'На весь экран';
+    }
+    improvExpand.addEventListener('click', () => setImprovExpanded(!improvPanel.classList.contains('expanded')));
+    function setImprovNotesHidden(hidden) {
+      improvNotesAreHidden = hidden;
+      improvNotesItem.classList.toggle('notes-hidden', hidden);
+      improvNotesDisplay.hidden = hidden;
+      improvNotesDisplay.setAttribute('aria-hidden', String(hidden));
+      improvNotesVisibility.setAttribute('aria-pressed', String(hidden));
+      improvNotesVisibility.setAttribute('aria-label', hidden ? 'Показать ноты аккорда' : 'Скрыть ноты аккорда');
+      improvNotesVisibility.title = hidden ? 'Показать ноты' : 'Скрыть ноты';
+    }
+    improvNotesVisibility.addEventListener('click', () => setImprovNotesHidden(!improvNotesAreHidden));
+    improvSettingsButton.addEventListener('click', () => improvSettings.showModal());
+    improvSettingsClose.addEventListener('click', () => improvSettings.close('cancel'));
+    function showSettingsFirstChord() {
+      const tonality = improvKey.value === 'random' ? improvKeyDisplay.textContent : improvKey.value;
+      const degree = currentDegrees()[0];
+      const chord = chordFor(tonality, degree);
+      improvDegreeDisplay.textContent = degree || '—';
+      improvChordDisplay.textContent = chord ? chord.name : '—';
+      showNextImprovPosition(tonality, currentDegrees(), 0, improvLoop.checked);
+      improvNotesDisplay.textContent = chord ? chord.noteNames.join(' · ') : '—';
+      improvPanel.dataset.playbackIndex = '0';
+    }
+    function resetImprovAfterSettingsChange() {
+      stopImprov();
+      showSettingsFirstChord();
+    }
+    improvSettingsForm.addEventListener('input', resetImprovAfterSettingsChange);
+    improvSettingsForm.addEventListener('change', resetImprovAfterSettingsChange);
+
+    function randomItem(items) { return items[Math.floor(Math.random() * items.length)]; }
+    function tonalitiesForCurrentMode() {
+      return TONALITY_OPTIONS.filter(option => option.mode === improvMode.value);
+    }
+    function progressionsForCurrentMode() {
+      return READY_PROGRESSIONS.filter(progression => progression.mode === improvMode.value);
+    }
+    function selectedReadyProgression() {
+      return READY_PROGRESSIONS.find(progression => progression.id === improvProgressionPreset.value) || null;
+    }
+    function renderProgressionOptions(preferred = 'manual') {
+      const progressions = progressionsForCurrentMode();
+      const fragment = document.createDocumentFragment();
+      const manualOption = document.createElement('option');
+      manualOption.value = 'manual';
+      manualOption.textContent = 'Задать вручную';
+      fragment.appendChild(manualOption);
+      progressions.forEach((progression, index) => {
+        const option = document.createElement('option');
+        option.value = progression.id;
+        option.textContent = `${index + 1}. ${progression.name} — ${progression.progression.replaceAll('-', '–')}`;
+        fragment.appendChild(option);
+      });
+      improvProgressionPreset.replaceChildren(fragment);
+      improvProgressionPreset.value = progressions.some(progression => progression.id === preferred) ? preferred : 'manual';
+    }
+    function applyProgressionPreset() {
+      const progression = selectedReadyProgression();
+      const degreeModeRadios = Array.from(document.querySelectorAll('input[name="degreeMode"]'));
+      randomChordCount.disabled = Boolean(progression);
+      degreeModeRadios.forEach(radio => { radio.disabled = Boolean(progression); });
+      if (progression) {
+        randomChordCount.checked = false;
+        degreeModeRadios.find(radio => radio.value === 'manual').checked = true;
+        improvChordCount.value = String(progression.degrees.length);
+        improvChordCount.disabled = true;
+        renderDegreeFields(progression.degrees, false);
+      } else {
+        improvChordCount.disabled = randomChordCount.checked;
+        renderDegreeFields(currentDegrees(), degreeModeRadios.find(radio => radio.checked).value === 'random');
+      }
+    }
+    function tonalityForMode(value, mode = improvMode.value) {
+      if (value === 'random') return 'random';
+      const tonic = value.endsWith('m') ? value.slice(0, -1) : value;
+      return mode === 'minor' ? `${tonic}m` : tonic;
+    }
+    function renderTonalityOptions(preferred = 'random') {
+      const options = tonalitiesForCurrentMode();
+      const fragment = document.createDocumentFragment();
+      const randomOption = document.createElement('option');
+      randomOption.value = 'random';
+      randomOption.textContent = 'Случайно';
+      fragment.appendChild(randomOption);
+      options.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.label;
+        fragment.appendChild(option);
+      });
+      improvKey.replaceChildren(fragment);
+      const available = new Set(options.map(option => option.value));
+      improvKey.value = preferred === 'random' || available.has(preferred) ? preferred : 'random';
+      improvKey.dataset.mode = improvMode.value;
+    }
+    function chordCount() {
+      const normalized = Math.min(12, Math.max(1, Math.round(Number(improvChordCount.value) || 1)));
+      improvChordCount.value = normalized;
+      return normalized;
+    }
+    function currentDegrees() {
+      return Array.from(degreeFields.querySelectorAll('select')).map(select => select.value);
+    }
+    function clearDegreeError() {
+      degreeError.hidden = true;
+      degreeError.textContent = '';
+    }
+    function renderDegreeFields(values = currentDegrees(), randomize = false) {
+      const count = chordCount();
+      const fragment = document.createDocumentFragment();
+      for (let index = 0; index < count; index++) {
+        const label = document.createElement('label');
+        label.className = 'degree-slot';
+        label.textContent = `${index + 1}`;
+        const select = document.createElement('select');
+        select.className = 'degree-select';
+        select.setAttribute('aria-label', `Ступень ${index + 1}`);
+        select.innerHTML = '<option value="">—</option>' + DEGREES.map(degree => `<option value="${degree}">${degree}</option>`).join('');
+        select.value = randomize ? randomItem(DEGREES) : (values[index] || '');
+        select.disabled = randomize || Boolean(selectedReadyProgression());
+        select.addEventListener('change', clearDegreeError);
+        label.appendChild(select);
+        fragment.appendChild(label);
+      }
+      degreeFields.replaceChildren(fragment);
+      clearDegreeError();
+      degreeFields.dataset.count = String(count);
+    }
+    function updateTonalityPreview(forceRandom = false) {
+      if (improvKey.value === 'random') {
+        const tonalities = tonalitiesForCurrentMode().map(option => option.value);
+        if (forceRandom || !randomTonality || !tonalities.includes(randomTonality)) randomTonality = randomItem(tonalities);
+        improvKeyDisplay.textContent = randomTonality;
+        improvKeyDisplay.dataset.random = 'true';
+      } else {
+        randomTonality = '';
+        improvKeyDisplay.textContent = improvKey.value;
+        improvKeyDisplay.dataset.random = 'false';
+      }
+      renderKeySignature(improvKeyDisplay.textContent);
+    }
+    improvMode.addEventListener('change', () => {
+      const preferred = tonalityForMode(improvKey.value);
+      renderTonalityOptions(preferred);
+      renderProgressionOptions('manual');
+      applyProgressionPreset();
+      updateTonalityPreview(true);
+    });
+    improvKey.addEventListener('change', () => updateTonalityPreview(true));
+    improvProgressionPreset.addEventListener('change', applyProgressionPreset);
+    improvChordCount.addEventListener('input', () => {
+      if (improvChordCount.value === '') return;
+      renderDegreeFields(currentDegrees(), document.querySelector('input[name="degreeMode"]:checked').value === 'random');
+    });
+    improvChordCount.addEventListener('change', () => renderDegreeFields(currentDegrees(), document.querySelector('input[name="degreeMode"]:checked').value === 'random'));
+    randomChordCount.addEventListener('change', () => {
+      if (randomChordCount.checked) improvChordCount.value = String(2 + Math.floor(Math.random() * 7));
+      improvChordCount.disabled = randomChordCount.checked;
+      renderDegreeFields([], document.querySelector('input[name="degreeMode"]:checked').value === 'random');
+    });
+    function normalizeChordDuration() {
+      const duration = Math.min(20, Math.max(1, Math.round(Number(secondsPerChord.value) || 1)));
+      secondsPerChord.value = String(duration);
+      return duration;
+    }
+    function normalizeHitsPerChord() {
+      const hits = Math.min(4, Math.max(1, Math.round(Number(hitsPerChord.value) || 1)));
+      hitsPerChord.value = String(hits);
+      return hits;
+    }
+    secondsPerChord.addEventListener('change', normalizeChordDuration);
+    hitsPerChord.addEventListener('change', normalizeHitsPerChord);
+    improvLoop.addEventListener('change', () => { improvLoopLabel.textContent = improvLoop.checked ? 'Да' : 'Нет'; });
+    document.querySelectorAll('input[name="degreeMode"]').forEach(radio => {
+      radio.addEventListener('change', () => renderDegreeFields(currentDegrees(), radio.value === 'random'));
+    });
+    improvSettingsForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const values = currentDegrees();
+      const filled = values.filter(Boolean).length;
+      const count = chordCount();
+      if (filled !== count) {
+        degreeError.textContent = `Заполните все ступени: выбрано ${filled} из ${count}.`;
+        degreeError.hidden = false;
+        const empty = Array.from(degreeFields.querySelectorAll('select:not(:disabled)')).find(select => !select.value);
+        if (empty) empty.focus();
+        return;
+      }
+      improvPanel.dataset.mode = improvMode.value;
+      improvPanel.dataset.tonality = improvKeyDisplay.textContent;
+      improvPanel.dataset.progressionPreset = improvProgressionPreset.value;
+      improvPanel.dataset.progression = values.join('-');
+      improvPanel.dataset.chordCount = String(count);
+      const duration = normalizeChordDuration();
+      const hits = normalizeHitsPerChord();
+      improvPanel.dataset.secondsPerChord = String(duration);
+      improvPanel.dataset.hitsPerChord = String(hits);
+      improvPanel.dataset.loop = String(improvLoop.checked);
+      improvPanel.dataset.octaves = String(improvOctaves.checked);
+      clearImprovTiming(); releaseImprovChord();
+      improvConfig = {
+        mode: improvMode.value,
+        keyChoice: improvKey.value,
+        tonality: improvKeyDisplay.textContent,
+        preset: improvProgressionPreset.value,
+        degrees: values.slice(),
+        seconds: duration,
+        loop: improvLoop.checked,
+        hits,
+        octaves: improvOctaves.checked,
+        randomChordCount: randomChordCount.checked,
+        degreeMode: document.querySelector('input[name="degreeMode"]:checked').value
+      };
+      improvIndex = 0; improvStepElapsed = 0; improvRemaining = 0;
+      setImprovState('stopped');
+      showImprovPosition();
+      saveUserPreferences();
+      improvSettings.close('saved');
+    });
+    improvSettings.addEventListener('click', e => {
+      if (e.target === improvSettings) improvSettings.close('cancel');
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && improvPanel.classList.contains('expanded') && !improvSettings.open) setImprovExpanded(false);
+    });
+    scroller.addEventListener('wheel', e => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault(); setWhiteWidth(whiteWidth * Math.exp(-e.deltaY * .003), e.clientX);
+    }, { passive: false });
+
+    const keyMap = {a:60,w:61,s:62,e:63,d:64,f:65,t:66,g:67,y:68,h:69,u:70,j:71,k:72,o:73,l:74,p:75,';':76};
+    const down = new Set();
+    window.addEventListener('keydown', e => {
+      if (pianoApp.hidden) return;
+      if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) sustainButton.click(); return; }
+      const m = keyMap[e.key.toLowerCase()]; if (!m || down.has(e.key)) return; down.add(e.key);
+      const key = keyboard.querySelector(`[data-midi="${m}"]`); key.classList.add('active'); piano.play(m, .78);
+    });
+    window.addEventListener('keyup', e => {
+      const m = keyMap[e.key.toLowerCase()]; if (!m) return; down.delete(e.key);
+      const key = keyboard.querySelector(`[data-midi="${m}"]`); key.classList.remove('active'); piano.release(m);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { cancelTransientInteractions(); stopToneTrainingSession(true); stopDegreeTrainingSession(true); saveUserPreferences(); }
+    });
+    window.addEventListener('pagehide', saveUserPreferences);
+    window.addEventListener('blur', () => { cancelTransientInteractions(); stopToneTrainingSession(true); stopDegreeTrainingSession(true); down.clear(); });
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', handleViewportChange);
+
+    const storedImprov = savedPreferences.improvisation && typeof savedPreferences.improvisation === 'object' ? savedPreferences.improvisation : {};
+    const initialMode = storedImprov.mode === 'major' ? 'major' : 'minor';
+    improvMode.value = initialMode;
+    const defaultKeyChoice = initialMode === 'minor' ? 'Dm' : 'D';
+    renderTonalityOptions(typeof storedImprov.keyChoice === 'string' ? storedImprov.keyChoice : defaultKeyChoice);
+    renderProgressionOptions(typeof storedImprov.preset === 'string' ? storedImprov.preset : 'manual');
+    const restoredProgression = selectedReadyProgression();
+    const storedDegrees = Array.isArray(storedImprov.degrees)
+      ? storedImprov.degrees.map(value => String(value).toUpperCase()).filter(value => DEGREES.includes(value))
+      : DEFAULT_IMPROV_DEGREES.slice();
+    const restoredCount = restoredProgression
+      ? restoredProgression.degrees.length
+      : Math.min(12, Math.max(1, Math.round(Number(storedImprov.degrees?.length || storedDegrees.length || 4))));
+    improvChordCount.value = String(restoredCount);
+    randomChordCount.checked = !restoredProgression && Boolean(storedImprov.randomChordCount);
+    const initialDegreeMode = !restoredProgression && storedImprov.degreeMode === 'random' ? 'random' : 'manual';
+    document.querySelector(`input[name="degreeMode"][value="${initialDegreeMode}"]`).checked = true;
+    applyProgressionPreset();
+    if (!restoredProgression) {
+      const filledDegrees = Array.from({ length: restoredCount }, (_, index) => storedDegrees[index] || DEFAULT_IMPROV_DEGREES[index % DEFAULT_IMPROV_DEGREES.length]);
+      renderDegreeFields(filledDegrees, false);
+      if (initialDegreeMode === 'random') degreeFields.querySelectorAll('select').forEach(select => { select.disabled = true; });
+      improvChordCount.disabled = randomChordCount.checked;
+    }
+    if (improvKey.value === 'random' && typeof storedImprov.tonality === 'string') randomTonality = storedImprov.tonality;
+    updateTonalityPreview(false);
+    secondsPerChord.value = String(storedImprov.seconds ?? 4);
+    hitsPerChord.value = String(storedImprov.hits ?? 1);
+    improvLoop.checked = storedImprov.loop === undefined ? true : Boolean(storedImprov.loop);
+    improvLoopLabel.textContent = improvLoop.checked ? 'Да' : 'Нет';
+    improvOctaves.checked = Boolean(storedImprov.octaves);
+    improvSound.checked = storedImprov.sound === undefined ? true : Boolean(storedImprov.sound);
+    improvSound.setAttribute('aria-label', improvSound.checked ? 'Звук импровизации включён' : 'Звук импровизации выключен');
+    const defaultDuration = normalizeChordDuration();
+    const defaultHits = normalizeHitsPerChord();
+    const initialDegrees = currentDegrees();
+    improvConfig = {
+      mode: improvMode.value,
+      keyChoice: improvKey.value,
+      tonality: improvKeyDisplay.textContent,
+      preset: improvProgressionPreset.value,
+      degrees: initialDegrees.slice(),
+      seconds: defaultDuration,
+      loop: improvLoop.checked,
+      hits: defaultHits,
+      octaves: improvOctaves.checked,
+      randomChordCount: randomChordCount.checked,
+      degreeMode: initialDegreeMode
+    };
+    improvPanel.dataset.mode = improvConfig.mode;
+    improvPanel.dataset.tonality = improvConfig.tonality;
+    improvPanel.dataset.progressionPreset = improvConfig.preset;
+    improvPanel.dataset.progression = improvConfig.degrees.join('-');
+    improvPanel.dataset.chordCount = String(improvConfig.degrees.length);
+    improvPanel.dataset.secondsPerChord = String(defaultDuration);
+    improvPanel.dataset.hitsPerChord = String(defaultHits);
+    improvPanel.dataset.loop = String(improvConfig.loop);
+    improvPanel.dataset.octaves = String(improvConfig.octaves);
+    const savedPedal = Boolean(savedPreferences.audio?.pedal);
+    sustainButton.setAttribute('aria-pressed', String(savedPedal));
+    sustainButton.classList.toggle('active', savedPedal);
+    piano.setPedal(savedPedal);
+    syncDegreeTrainingControls();
+    degreeTrainingKey.textContent = degreeTrainingConfig.keyChoice === 'random' ? '—' : degreeTrainingConfig.keyChoice;
+    degreeTrainingKey.disabled = degreeTrainingConfig.keyChoice === 'random';
+    setImprovState('stopped');
+    showImprovPosition();
+    setWhiteWidth(whiteWidth);
+    persistenceReady = true;
+    renderAppScreen();
+  </script>
+</body>
+</html>
