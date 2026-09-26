@@ -1383,7 +1383,10 @@
         if (this.pedal && !immediate && !ignorePedal) { this.sustained.add(midi); return; }
         const now = this.ctx.currentTime; voice.ended = true;
         voice.out.gain.cancelScheduledValues(now); voice.out.gain.setTargetAtTime(.0001, now, immediate ? .01 : .18);
-        setTimeout(() => { try { voice.oscillators.forEach(o => o.stop()); } catch {} this.voices.delete(midi); }, immediate ? 80 : 1200);
+        setTimeout(() => {
+          try { voice.oscillators.forEach(o => o.stop()); } catch {}
+          if (this.voices.get(midi) === voice) this.voices.delete(midi);
+        }, immediate ? 80 : 1200);
         this.sustained.delete(midi);
       }
       setPedal(on) {
@@ -1823,7 +1826,7 @@
     function clearDegreeTrainingPlayback() {
       degreeTrainingTimers.forEach(timer => clearTimeout(timer));
       degreeTrainingTimers = [];
-      degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
+      degreeTrainingChordNotes.forEach(midi => piano.release(midi, true, true));
       degreeTrainingChordNotes = [];
     }
     function clearDegreeTrainingHint() {
@@ -1856,6 +1859,7 @@
       piano.unlock();
       degreeTrainingChordNotes = chord.notes.slice();
       degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
+      degreeTrainingState.acceptingAnswer = true;
       degreeTrainingTimers.push(window.setTimeout(() => {
         degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
         degreeTrainingChordNotes = [];
@@ -1876,6 +1880,7 @@
       piano.unlock();
       degreeTrainingChordNotes = chord.notes.slice();
       degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
+      if (shouldResumeAnswers) degreeTrainingState.acceptingAnswer = true;
       degreeTrainingTimers.push(window.setTimeout(() => {
         degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
         degreeTrainingChordNotes = [];
@@ -1900,6 +1905,7 @@
       piano.unlock();
       degreeTrainingChordNotes = chord.notes.slice();
       degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
+      if (isTraining) degreeTrainingState.acceptingAnswer = true;
       degreeTrainingTimers.push(window.setTimeout(() => {
         degreeTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
         degreeTrainingChordNotes = [];
@@ -2008,6 +2014,7 @@
         return;
       }
       degreeTrainingState.acceptingAnswer = false;
+      clearDegreeTrainingPlayback();
       clearDegreeTrainingHint();
       if (cell) {
         cell.textContent = degreeTrainingState.hadError ? '×' : '✓';
@@ -2019,7 +2026,7 @@
         finishDegreeTrainingSession();
         return;
       }
-      degreeTrainingTimers.push(window.setTimeout(beginDegreeTrainingQuestion, 500));
+      beginDegreeTrainingQuestion();
     }
     degreeTrainingStartButton.addEventListener('click', startDegreeTrainingSession);
     degreeTrainingRepeat.addEventListener('click', playDegreeTrainingChord);
