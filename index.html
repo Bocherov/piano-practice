@@ -420,7 +420,7 @@
       <div class="degree-key-display" aria-live="polite">
         <span class="degree-key-label">Тональность</span>
         <button class="degree-key-value" id="degreeTrainingKey" type="button" aria-label="Воспроизвести тонику" title="Воспроизвести тонику" disabled>—</button>
-        <span class="degree-voicing-label">Первая клавиша трезвучия</span>
+        <span class="degree-voicing-label">Первая клавиша тоники</span>
         <div class="degree-voicing-control" role="group" aria-label="Расположение трезвучия">
           <button class="degree-voicing-step" id="degreeVoicingDown" type="button" aria-label="Перенести верхнюю ноту на октаву вниз" title="Перенести верхнюю ноту на октаву вниз">−</button>
           <span class="degree-voicing-note" id="degreeVoicingNote">—</span>
@@ -967,7 +967,6 @@
       : [];
     let degreeTrainingState = { active: false, index: 0, currentTonality: null, currentDegree: null, hadError: false, acceptingAnswer: false, lastTonality: null, lastDegree: null };
     let degreeVoicingShift = Number.isInteger(storedDegreeTraining?.voicingShift) && Math.abs(storedDegreeTraining.voicingShift) <= 6 ? storedDegreeTraining.voicingShift : 0;
-    let degreePreviewDegree = 'I';
     let degreeTrainingTimers = [];
     let degreeTrainingChordNotes = [];
     const READY_PROGRESSIONS = `
@@ -1859,24 +1858,25 @@
       stopDegreeTrainingSession(true);
       degreeTrainingKey.textContent = degreeTrainingConfig.keyChoice === 'random' ? '—' : degreeTrainingConfig.keyChoice;
       degreeTrainingKey.disabled = degreeTrainingConfig.keyChoice === 'random';
-      degreePreviewDegree = 'I';
       renderDegreeVoicing();
       saveUserPreferences();
       degreeTrainingSettings.close('saved');
     });
-    function voicedDegreeNotes(chord) {
-      const notes = chord.notes.slice();
+    function tonicVoicingNotes(tonality) {
+      const notes = chordFor(tonality, 'I').notes.slice();
       for (let step = 0; step < degreeVoicingShift; step += 1) notes.push(notes.shift() + 12);
       for (let step = 0; step > degreeVoicingShift; step -= 1) notes.unshift(notes.pop() - 12);
       return notes;
+    }
+    function voicedDegreeNotes(tonality, chord) {
+      const lowerNote = tonicVoicingNotes(tonality)[0];
+      return chord.notes.map(midi => lowerNote + (((midi - lowerNote) % 12 + 12) % 12)).sort((a, b) => a - b);
     }
     function renderDegreeVoicing() {
       const tonality = degreeTrainingState.active
         ? degreeTrainingState.currentTonality
         : (degreeTrainingConfig.keyChoice !== 'random' ? degreeTrainingConfig.keyChoice : null);
-      // In an active quiz the label stays on the tonic so it cannot reveal the answer.
-      const chord = tonality && chordFor(tonality, degreeTrainingState.active ? 'I' : degreePreviewDegree);
-      const firstNote = chord && voicedDegreeNotes(chord)[0];
+      const firstNote = tonality ? tonicVoicingNotes(tonality)[0] : null;
       degreeVoicingNote.textContent = firstNote == null ? '—' : `${SAMPLE_NOTE_NAMES[firstNote % 12]}${Math.floor(firstNote / 12) - 1}`;
       degreeVoicingDown.disabled = !tonality || degreeVoicingShift <= -6;
       degreeVoicingUp.disabled = !tonality || degreeVoicingShift >= 6;
@@ -1885,7 +1885,7 @@
       degreeVoicingShift = Math.max(-6, Math.min(6, degreeVoicingShift + direction));
       renderDegreeVoicing();
       if (degreeTrainingState.active) playDegreeTrainingChord();
-      else playDegreeTrainingChoice(degreePreviewDegree);
+      else playDegreeTrainingTonic();
       schedulePreferencesSave();
     }
     function clearDegreeTrainingPlayback() {
@@ -1922,7 +1922,7 @@
       const chord = chordFor(degreeTrainingState.currentTonality, degreeTrainingState.currentDegree);
       if (!chord) return;
       piano.unlock();
-      degreeTrainingChordNotes = voicedDegreeNotes(chord);
+      degreeTrainingChordNotes = voicedDegreeNotes(degreeTrainingState.currentTonality, chord);
       degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
       degreeTrainingState.acceptingAnswer = true;
       degreeTrainingTimers.push(window.setTimeout(() => {
@@ -1936,10 +1936,6 @@
     function playDegreeTrainingTonic() {
       const tonality = degreeTrainingState.currentTonality || (degreeTrainingConfig.keyChoice !== 'random' ? degreeTrainingConfig.keyChoice : null);
       if (!tonality) return;
-      if (!degreeTrainingState.active) {
-        degreePreviewDegree = 'I';
-        renderDegreeVoicing();
-      }
       clearDegreeTrainingPlayback();
       const shouldResumeAnswers = degreeTrainingState.active;
       if (shouldResumeAnswers) degreeTrainingState.acceptingAnswer = false;
@@ -1947,7 +1943,7 @@
       const chord = chordFor(tonality, 'I');
       if (!chord) return;
       piano.unlock();
-      degreeTrainingChordNotes = voicedDegreeNotes(chord);
+      degreeTrainingChordNotes = voicedDegreeNotes(tonality, chord);
       degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
       if (shouldResumeAnswers) degreeTrainingState.acceptingAnswer = true;
       degreeTrainingTimers.push(window.setTimeout(() => {
@@ -1971,12 +1967,8 @@
       }
       const chord = chordFor(tonality, degree);
       if (!chord) return;
-      if (!isTraining) {
-        degreePreviewDegree = degree;
-        renderDegreeVoicing();
-      }
       piano.unlock();
-      degreeTrainingChordNotes = voicedDegreeNotes(chord);
+      degreeTrainingChordNotes = voicedDegreeNotes(tonality, chord);
       degreeTrainingChordNotes.forEach((midi, index) => piano.play(midi, index === 0 ? .74 : .65));
       if (isTraining) degreeTrainingState.acceptingAnswer = true;
       degreeTrainingTimers.push(window.setTimeout(() => {
@@ -2008,7 +2000,6 @@
       degreeTrainingStartButton.textContent = 'Начать тренировку';
       degreeTrainingKey.textContent = degreeTrainingConfig.keyChoice === 'random' ? '—' : degreeTrainingConfig.keyChoice;
       degreeTrainingKey.disabled = degreeTrainingConfig.keyChoice === 'random';
-      degreePreviewDegree = 'I';
       renderDegreeVoicing();
       degreeTrainingResultCells.forEach((cell, index) => {
         cell.textContent = '';
