@@ -93,7 +93,7 @@
     .ear-mode-button:active { transform: translateY(0); }
     .ear-mode-button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
     .ear-mode-button span { font: 500 clamp(20px, 2.6vw, 28px)/1.1 Georgia, serif; }
-    .degree-key-display { position: absolute; top: calc(clamp(26px, 5vw, 62px) + 112px); left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); display: grid; justify-items: center; gap: 5px; pointer-events: none; }
+    .degree-key-display { position: absolute; z-index: 1; top: calc(clamp(26px, 5vw, 62px) + 112px); left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); display: grid; justify-items: center; gap: 5px; pointer-events: none; }
     .degree-key-label { color: #85827b; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
     .degree-key-value { min-width: 96px; padding: 8px 18px 9px; border: 1px solid rgba(200,166,106,.32); border-radius: 999px; color: #e4c78d; background: rgba(200,166,106,.07); font: 500 30px/1 Georgia, serif; text-align: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
     .degree-key-value:active:not(:disabled) { transform: scale(.97); }
@@ -105,10 +105,9 @@
     .degree-voicing-step:disabled { opacity: .45; cursor: default; }
     .degree-voicing-step:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
     .degree-voicing-note { min-width: 74px; color: #e9e6df; font: 500 26px/1 Georgia, serif; text-align: center; }
-    #degreeTrainingScreen .ear-card { min-height: max(760px, calc(100dvh - 36px)); }
-    .degree-seventh-button { width: 48px; height: 44px; margin-top: 10px; padding: 0; border: 1px solid rgba(200,166,106,.45); border-radius: 14px; color: #e4c78d; background: rgba(200,166,106,.08); font: 500 25px/1 Georgia, serif; cursor: pointer; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-    .degree-seventh-button.held, .degree-seventh-button.latched { border-color: #dec48b; color: #211a0f; background: #c8a66a; box-shadow: 0 0 0 3px rgba(200,166,106,.16); }
-    .degree-seventh-button.latched { box-shadow: 0 0 0 3px rgba(200,166,106,.24), 0 0 18px rgba(200,166,106,.22); }
+    .degree-seventh-button { width: calc((100% - 3 * clamp(8px, 1.5vw, 13px)) / 4); min-height: clamp(72px, 12dvh, 104px); margin-top: 10px; padding: 10px; border: 1px solid rgba(255,255,255,.13); border-radius: 17px; color: #e9e6df; background: linear-gradient(145deg, rgba(48,49,54,.88), rgba(15,16,18,.92)); box-shadow: inset 0 1px rgba(255,255,255,.045), 0 12px 24px rgba(0,0,0,.2); font: 500 clamp(24px, 4vw, 36px)/1 Georgia, serif; cursor: pointer; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .degree-seventh-button.held, .degree-seventh-button.latched { border-color: #ead19c; color: #211a0f; background: #d6b779; box-shadow: 0 0 0 3px rgba(214,183,121,.25), 0 12px 24px rgba(0,0,0,.2); }
+    .degree-seventh-button.latched { box-shadow: 0 0 0 4px rgba(214,183,121,.35), 0 0 24px rgba(214,183,121,.35); }
     .degree-seventh-button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
     .degree-training-body { position: absolute; left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); top: calc(clamp(26px, 5vw, 62px) + 265px); bottom: 18px; display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; }
     .degree-training-session { display: grid; gap: 10px; justify-items: center; }
@@ -302,7 +301,7 @@
       .ear-mode-button span { font-size: 23px; }
       .degree-key-display { top: 138px; }
       .degree-key-value { font-size: 26px; }
-      #degreeTrainingScreen .ear-card { min-height: max(760px, calc(100dvh - 20px)); }
+      .degree-seventh-button { width: calc((100% - 24px) / 4); min-height: 70px; border-radius: 14px; font-size: 25px; }
       .degree-training-body { top: 280px; left: 18px; right: 18px; bottom: 24px; gap: 13px; }
       .degree-buttons { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
       .degree-button { min-height: 70px; border-radius: 14px; font-size: 25px; }
