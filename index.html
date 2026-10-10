@@ -105,6 +105,11 @@
     .degree-voicing-step:disabled { opacity: .45; cursor: default; }
     .degree-voicing-step:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
     .degree-voicing-note { min-width: 74px; color: #e9e6df; font: 500 26px/1 Georgia, serif; text-align: center; }
+    #degreeTrainingScreen .ear-card { min-height: max(760px, calc(100dvh - 36px)); }
+    .degree-seventh-button { width: 48px; height: 44px; margin-top: 10px; padding: 0; border: 1px solid rgba(200,166,106,.45); border-radius: 14px; color: #e4c78d; background: rgba(200,166,106,.08); font: 500 25px/1 Georgia, serif; cursor: pointer; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .degree-seventh-button.held, .degree-seventh-button.latched { border-color: #dec48b; color: #211a0f; background: #c8a66a; box-shadow: 0 0 0 3px rgba(200,166,106,.16); }
+    .degree-seventh-button.latched { box-shadow: 0 0 0 3px rgba(200,166,106,.24), 0 0 18px rgba(200,166,106,.22); }
+    .degree-seventh-button:focus-visible { outline: 2px solid #e5b96b; outline-offset: 3px; }
     .degree-training-body { position: absolute; left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); top: calc(clamp(26px, 5vw, 62px) + 265px); bottom: 18px; display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; }
     .degree-training-session { display: grid; gap: 10px; justify-items: center; }
     .degree-buttons { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: clamp(8px, 1.5vw, 13px); }
@@ -297,6 +302,7 @@
       .ear-mode-button span { font-size: 23px; }
       .degree-key-display { top: 138px; }
       .degree-key-value { font-size: 26px; }
+      #degreeTrainingScreen .ear-card { min-height: max(760px, calc(100dvh - 20px)); }
       .degree-training-body { top: 280px; left: 18px; right: 18px; bottom: 24px; gap: 13px; }
       .degree-buttons { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
       .degree-button { min-height: 70px; border-radius: 14px; font-size: 25px; }
@@ -426,6 +432,7 @@
           <span class="degree-voicing-note" id="degreeVoicingNote">—</span>
           <button class="degree-voicing-step" id="degreeVoicingUp" type="button" aria-label="Перенести нижнюю ноту на октаву вверх" title="Перенести нижнюю ноту на октаву вверх">+</button>
         </div>
+        <button class="degree-seventh-button" id="degreeSeventhButton" type="button" aria-label="Удерживать для септаккорда; двойное нажатие закрепляет режим" aria-pressed="false" title="Удерживать для септаккорда; двойное нажатие закрепляет режим">7</button>
       </div>
       <div class="degree-training-body">
         <div class="degree-training-session" id="degreeTrainingSession" aria-live="polite" hidden>
@@ -872,6 +879,7 @@
     const degreeVoicingDown = document.getElementById('degreeVoicingDown');
     const degreeVoicingUp = document.getElementById('degreeVoicingUp');
     const degreeVoicingNote = document.getElementById('degreeVoicingNote');
+    const degreeSeventhButton = document.getElementById('degreeSeventhButton');
     const degreeTrainingButtons = document.getElementById('degreeTrainingButtons');
     const degreeButtons = Array.from(degreeTrainingButtons.querySelectorAll('[data-degree]'));
     const degreeTrainingResultCells = Array.from(document.querySelectorAll('[data-degree-result]'));
@@ -969,6 +977,11 @@
     let degreeVoicingShift = Number.isInteger(storedDegreeTraining?.voicingShift) && Math.abs(storedDegreeTraining.voicingShift) <= 6 ? storedDegreeTraining.voicingShift : 0;
     let degreeTrainingTimers = [];
     let degreeTrainingChordNotes = [];
+    const degreeSeventhPointers = new Map();
+    const degreePressSeventh = new WeakMap();
+    let degreeSeventhLatched = false;
+    let degreeSeventhKeyboardHeld = false;
+    let lastDegreeSeventhTap = 0;
     const READY_PROGRESSIONS = `
 1|Axis Progression|I-V-vi-IV|major
 2|Axis Rotation|vi-IV-I-V|major
@@ -1888,6 +1901,65 @@
       else playDegreeTrainingTonic();
       schedulePreferencesSave();
     }
+    function isDegreeSeventhActive() {
+      return degreeSeventhLatched || degreeSeventhPointers.size > 0 || degreeSeventhKeyboardHeld;
+    }
+    function renderDegreeSeventhButton() {
+      degreeSeventhButton.classList.toggle('held', degreeSeventhPointers.size > 0 || degreeSeventhKeyboardHeld);
+      degreeSeventhButton.classList.toggle('latched', degreeSeventhLatched);
+      degreeSeventhButton.setAttribute('aria-pressed', String(isDegreeSeventhActive()));
+    }
+    function registerDegreeSeventhTap() {
+      const now = performance.now();
+      if (now - lastDegreeSeventhTap < 350) {
+        degreeSeventhLatched = !degreeSeventhLatched;
+        lastDegreeSeventhTap = 0;
+      } else {
+        lastDegreeSeventhTap = now;
+      }
+      renderDegreeSeventhButton();
+    }
+    degreeSeventhButton.addEventListener('pointerdown', event => {
+      degreeSeventhPointers.set(event.pointerId, performance.now());
+      degreeSeventhButton.setPointerCapture(event.pointerId);
+      renderDegreeSeventhButton();
+    });
+    degreeSeventhButton.addEventListener('pointerup', event => {
+      const startedAt = degreeSeventhPointers.get(event.pointerId);
+      if (startedAt == null) return;
+      degreeSeventhPointers.delete(event.pointerId);
+      if (performance.now() - startedAt < 350) registerDegreeSeventhTap();
+      else { lastDegreeSeventhTap = 0; renderDegreeSeventhButton(); }
+    });
+    function cancelDegreeSeventhPointer(event) {
+      degreeSeventhPointers.delete(event.pointerId);
+      lastDegreeSeventhTap = 0;
+      renderDegreeSeventhButton();
+    }
+    degreeSeventhButton.addEventListener('pointercancel', cancelDegreeSeventhPointer);
+    degreeSeventhButton.addEventListener('lostpointercapture', event => {
+      if (degreeSeventhPointers.has(event.pointerId)) cancelDegreeSeventhPointer(event);
+    });
+    degreeSeventhButton.addEventListener('keydown', event => {
+      if (event.key !== ' ' && event.key !== 'Enter') return;
+      event.preventDefault();
+      if (event.repeat || degreeSeventhKeyboardHeld) return;
+      degreeSeventhKeyboardHeld = true;
+      renderDegreeSeventhButton();
+    });
+    degreeSeventhButton.addEventListener('keyup', event => {
+      if (event.key !== ' ' && event.key !== 'Enter') return;
+      event.preventDefault();
+      if (!degreeSeventhKeyboardHeld) return;
+      degreeSeventhKeyboardHeld = false;
+      registerDegreeSeventhTap();
+    });
+    degreeSeventhButton.addEventListener('click', event => event.preventDefault());
+    window.addEventListener('blur', () => {
+      degreeSeventhPointers.clear();
+      degreeSeventhKeyboardHeld = false;
+      renderDegreeSeventhButton();
+    });
     function clearDegreeTrainingPlayback() {
       degreeTrainingTimers.forEach(timer => clearTimeout(timer));
       degreeTrainingTimers = [];
@@ -1954,7 +2026,7 @@
         degreeTrainingRepeat.disabled = false;
       }, 1500));
     }
-    function playDegreeTrainingChoice(degree) {
+    function playDegreeTrainingChoice(degree, useSeventh = isDegreeSeventhActive()) {
       const isTraining = degreeTrainingState.active;
       const tonality = isTraining
         ? degreeTrainingState.currentTonality
@@ -1965,7 +2037,7 @@
         degreeTrainingState.acceptingAnswer = false;
         degreeTrainingRepeat.disabled = true;
       }
-      const chord = chordFor(tonality, degree);
+      const chord = useSeventh ? seventhChordFor(tonality, degree) : chordFor(tonality, degree);
       if (!chord) return;
       piano.unlock();
       degreeTrainingChordNotes = voicedDegreeNotes(tonality, chord);
@@ -2066,9 +2138,9 @@
       degreeTrainingState.acceptingAnswer = false;
       if (resetView) clearDegreeTrainingResultsView();
     }
-    function handleDegreeTrainingGuess(degree) {
+    function handleDegreeTrainingGuess(degree, useSeventh = isDegreeSeventhActive()) {
       if (!degreeTrainingState.active) {
-        playDegreeTrainingChoice(degree);
+        playDegreeTrainingChoice(degree, useSeventh);
         return;
       }
       if (!degreeTrainingState.acceptingAnswer) return;
@@ -2077,7 +2149,7 @@
         degreeTrainingState.hadError = true;
         const answer = degreeButtons.find(button => button.dataset.degree === degreeTrainingState.currentDegree);
         if (answer) answer.classList.add('correct-answer');
-        playDegreeTrainingChoice(degree);
+        playDegreeTrainingChoice(degree, useSeventh);
         return;
       }
       degreeTrainingState.acceptingAnswer = false;
@@ -2089,6 +2161,16 @@
         cell.setAttribute('aria-label', `Задание ${degreeTrainingState.index + 1}: ${degreeTrainingState.hadError ? 'неверно, затем правильно' : 'правильно'}`);
       }
       degreeTrainingState.index += 1;
+      if (useSeventh) {
+        playDegreeTrainingChoice(degree, true);
+        degreeTrainingState.acceptingAnswer = false;
+        degreeTrainingRepeat.disabled = true;
+        degreeTrainingTimers.push(window.setTimeout(() => {
+          if (degreeTrainingState.index >= degreeTrainingResultCells.length) finishDegreeTrainingSession();
+          else beginDegreeTrainingQuestion();
+        }, 850));
+        return;
+      }
       if (degreeTrainingState.index >= degreeTrainingResultCells.length) {
         finishDegreeTrainingSession();
         return;
@@ -2100,9 +2182,16 @@
     degreeTrainingKey.addEventListener('click', playDegreeTrainingTonic);
     degreeVoicingDown.addEventListener('click', () => changeDegreeVoicing(-1));
     degreeVoicingUp.addEventListener('click', () => changeDegreeVoicing(1));
+    degreeTrainingButtons.addEventListener('pointerdown', event => {
+      const button = event.target.closest('[data-degree]');
+      if (button) degreePressSeventh.set(button, isDegreeSeventhActive());
+    });
     degreeTrainingButtons.addEventListener('click', event => {
       const button = event.target.closest('[data-degree]');
-      if (button) handleDegreeTrainingGuess(button.dataset.degree);
+      if (!button) return;
+      const useSeventh = degreePressSeventh.get(button) || isDegreeSeventhActive();
+      degreePressSeventh.delete(button);
+      handleDegreeTrainingGuess(button.dataset.degree, useSeventh);
     });
     function closeDegreeTrainingStats(returnValue = 'done') {
       if (degreeTrainingStats.open) degreeTrainingStats.close(returnValue);
@@ -2152,6 +2241,17 @@
       const rootName = key.notes[index];
       const rootMidi = 48 + ((key.root + pitchOffsets[0]) % 12);
       return { name: `${rootName}${quality}`, notes: tones.map(tone => tone.midi), noteNames: tones.map(tone => tone.name), rootMidi };
+    }
+    function seventhChordFor(tonality, degree) {
+      const chord = chordFor(tonality, degree);
+      if (!chord) return null;
+      const key = TONALITY_DATA[tonality];
+      const index = degreeIndex(degree);
+      const seventhOffset = key.minor
+        ? [10, 0, 2, 3, 5, 7, 8][index]
+        : MAJOR_INTERVALS[(index + 6) % 7];
+      const seventhMidi = 48 + ((key.root + seventhOffset) % 12);
+      return { ...chord, notes: [...chord.notes, seventhMidi].sort((a, b) => a - b) };
     }
     function releaseToneTrainingChord() {
       toneTrainingChordNotes.forEach(midi => piano.release(midi, false, true));
