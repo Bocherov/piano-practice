@@ -112,7 +112,7 @@
     .degree-training-body { position: absolute; left: clamp(26px, 5vw, 62px); right: clamp(26px, 5vw, 62px); top: calc(clamp(26px, 5vw, 62px) + 265px); bottom: 18px; display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; }
     .degree-training-session { display: grid; gap: 10px; justify-items: center; }
     .degree-buttons { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: clamp(8px, 1.5vw, 13px); }
-    .degree-button { min-height: clamp(72px, 12dvh, 104px); padding: 10px; border: 1px solid rgba(255,255,255,.13); border-radius: 17px; color: #e9e6df; background: linear-gradient(145deg, rgba(48,49,54,.88), rgba(15,16,18,.92)); box-shadow: inset 0 1px rgba(255,255,255,.045), 0 12px 24px rgba(0,0,0,.2); font: 500 clamp(24px, 4vw, 36px)/1 Georgia, serif; cursor: pointer; transition: transform .15s ease, border-color .15s ease, background .15s ease; }
+    .degree-button { min-height: clamp(72px, 12dvh, 104px); padding: 10px; border: 1px solid rgba(255,255,255,.13); border-radius: 17px; color: #e9e6df; background: linear-gradient(145deg, rgba(48,49,54,.88), rgba(15,16,18,.92)); box-shadow: inset 0 1px rgba(255,255,255,.045), 0 12px 24px rgba(0,0,0,.2); font: 500 clamp(24px, 4vw, 36px)/1 Georgia, serif; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; transition: transform .15s ease, border-color .15s ease, background .15s ease; }
     .degree-button { grid-column: span 2; }
     .degree-button:nth-child(5) { grid-column: 2 / span 2; }
     .degree-button:active { transform: scale(.98); }
@@ -978,6 +978,7 @@
     let degreeTrainingChordNotes = [];
     const degreeSeventhPointers = new Map();
     const degreePressSeventh = new WeakMap();
+    const degreeHandledTouch = new WeakSet();
     let degreeSeventhLatched = false;
     let degreeSeventhKeyboardHeld = false;
     let lastDegreeSeventhTap = 0;
@@ -2183,11 +2184,25 @@
     degreeVoicingUp.addEventListener('click', () => changeDegreeVoicing(1));
     degreeTrainingButtons.addEventListener('pointerdown', event => {
       const button = event.target.closest('[data-degree]');
-      if (button) degreePressSeventh.set(button, isDegreeSeventhActive());
+      if (!button) return;
+      const useSeventh = isDegreeSeventhActive();
+      if (event.pointerType === 'touch') {
+        // iOS may omit click for the second finger while the 7 pedal is held.
+        // Play on touch down, then ignore a compatibility click if it arrives.
+        degreeHandledTouch.add(button);
+        window.setTimeout(() => degreeHandledTouch.delete(button), 1000);
+        handleDegreeTrainingGuess(button.dataset.degree, useSeventh);
+      } else {
+        degreePressSeventh.set(button, useSeventh);
+      }
     });
     degreeTrainingButtons.addEventListener('click', event => {
       const button = event.target.closest('[data-degree]');
       if (!button) return;
+      if (degreeHandledTouch.has(button)) {
+        degreeHandledTouch.delete(button);
+        return;
+      }
       const useSeventh = degreePressSeventh.get(button) || isDegreeSeventhActive();
       degreePressSeventh.delete(button);
       handleDegreeTrainingGuess(button.dataset.degree, useSeventh);
